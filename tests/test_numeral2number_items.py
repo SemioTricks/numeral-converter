@@ -4,6 +4,7 @@ from numeral_converter.numeral_converter import numeral2number_items
 
 
 def test_numeral2number_items():
+
     R = numeral2number_items(
         "двісти тридцать чотири тисячі шістот п’ятнадцять", lang="uk"
     )
@@ -44,7 +45,7 @@ def test_numeral2number_items():
     assert R[1].value == 100
 
 
-def test_not_number():
+def test_numeral2number_items_with_not_number():
     msg = 'can\'t convert "варіант" to integer'
     with pytest.raises(ValueError, match=msg):
         numeral2number_items("перший варіант", lang="uk")

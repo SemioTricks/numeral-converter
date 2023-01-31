@@ -5,7 +5,59 @@ import pytest
 from numeral_converter.numeral_converter import NumberItem, number_items2int
 
 
-def test_wrong_by_next_group_order_values():
+def test_number_items2int():
+
+    # "тисяча сто"
+    assert (
+        number_items2int(
+            number_items=[
+                NumberItem(value=1000, order=3, scale=True),
+                NumberItem(value=100, order=2, scale=None),
+            ]
+        )
+        == 1100
+    )
+
+    assert (
+        number_items2int(
+            number_items=[
+                NumberItem(value=100, order=2, scale=None),
+                NumberItem(value=11, order=1, scale=None),
+                NumberItem(value=1000, order=3, scale=True),
+                NumberItem(value=100, order=2, scale=None),
+                NumberItem(value=11, order=1, scale=None),
+            ]
+        )
+        == 111111
+    )
+
+    assert (
+        number_items2int(
+            number_items=[
+                NumberItem(value=100, order=2, scale=None),
+                NumberItem(value=40, order=1, scale=None),
+                NumberItem(value=2, order=0, scale=None),
+                NumberItem(value=1000, order=3, scale=True),
+                NumberItem(value=30, order=1, scale=None),
+                NumberItem(value=1, order=0, scale=None),
+            ]
+        )
+        == 142031
+    )
+
+    assert (
+        number_items2int(
+            number_items=[
+                NumberItem(200, 2, None),
+                NumberItem(20, 1, None),
+                NumberItem(2, 0, None),
+            ]
+        )
+        == 222
+    )
+
+
+def test_less_eq_summary_order_in_next_group():
 
     msg = (
         r"position 1: order of 1000000000:9 is less/equal "
@@ -81,7 +133,7 @@ def test_wrong_by_scale_values():
         )
 
 
-def test_correct_nonsimple():
+def test_scale_of_scale():
     # "тисяча мільонів"
     assert (
         number_items2int(
@@ -100,55 +152,4 @@ def test_correct_nonsimple():
             NumberItem(value=100, order=2, scale=True),
             NumberItem(value=3, order=0, scale=None),
         ]
-    )
-
-
-def test_correct():
-    # "тисяча сто"
-    assert (
-        number_items2int(
-            number_items=[
-                NumberItem(value=1000, order=3, scale=True),
-                NumberItem(value=100, order=2, scale=None),
-            ]
-        )
-        == 1100
-    )
-
-    assert (
-        number_items2int(
-            number_items=[
-                NumberItem(value=100, order=2, scale=None),
-                NumberItem(value=11, order=1, scale=None),
-                NumberItem(value=1000, order=3, scale=True),
-                NumberItem(value=100, order=2, scale=None),
-                NumberItem(value=11, order=1, scale=None),
-            ]
-        )
-        == 111111
-    )
-
-    assert (
-        number_items2int(
-            number_items=[
-                NumberItem(value=100, order=2, scale=None),
-                NumberItem(value=40, order=1, scale=None),
-                NumberItem(value=2, order=0, scale=None),
-                NumberItem(value=1000, order=3, scale=True),
-                NumberItem(value=30, order=1, scale=None),
-                NumberItem(value=1, order=0, scale=None),
-            ]
-        )
-        == 142031
-    )
-
-    assert (
-        number_items2int(
-            number_items=[
-                NumberItem(200, 2, None),
-                NumberItem(20, 1, None),
-                NumberItem(2, 0, None),
-            ]
-        )
-        == 222
     )

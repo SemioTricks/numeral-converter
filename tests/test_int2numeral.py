@@ -1,29 +1,79 @@
+import re
+
 import pytest
 
 from numeral_converter import int2numeral
-
-# Auto collected from https://www.kyivdictionary.com/uk/words/number-spelling
-
-
-def test_unknown():
-    with pytest.raises(ValueError):
-        int2numeral(10**100, case="nominative", num_class="quantitative")
+from numeral_converter.numeral_converter import MORPH_FORMS
 
 
-def test_wrong_form():
+def test_int2numeral_invalid_label():
+    msg = re.escape(f"Invalid label; use one of {MORPH_FORMS.keys()}")
+    with pytest.raises(ValueError, match=msg):
+        int2numeral(2022, form="nominative", num_class="quantitative")
+
+
+def test_int2numeral_invalid_label_value():
+    msg = re.escape(f'Invalid label case value; use one of {MORPH_FORMS["case"]}')
+    with pytest.raises(ValueError, match=msg):
+        int2numeral(2022, case="nominate", num_class="quantitative")
+
+
+def test_int2numeral_empty_label_value():
+    int2numeral(2022, case=None, num_class=None)
+    assert True
+
+
+def test_int2numeral_one_numeral_form():
+    R = int2numeral(2022, case="nominative", num_class="quantitative")
+    assert R["numeral"] == "дві тисячі двадцять два"
+    assert len(R["numeral_forms"]) == 1
+    assert R["numeral_forms"] == [
+        R["numeral"],
+    ]
+
+
+def test_int2numeral_several_numeral_forms():
+    R = int2numeral(2021, case="nominative", gender="neuter", num_class="quantitative")
+    assert len(R["numeral_forms"]) == 2
+    assert R["numeral_forms"] == [
+        "дві тисячі двадцять одне",
+        "дві тисячі двадцять одно",
+    ]
+
+    R = int2numeral(89, case="prepositional", num_class="quantitative")
+    assert len(R["numeral_forms"]) == 4
+    assert R["numeral_forms"] == [
+        "вісімдесяти дев’яти",
+        "вісімдесяти дев’ятьох",
+        "вісімдесятьох дев’яти",
+        "вісімдесятьох дев’ятьох",
+    ]
+
+
+def test_int2numeral_unknown_number():
+    unknown_value = 10 ** (3 * 20)
+    msg = f"no data for number {unknown_value}"
+    with pytest.raises(ValueError, match=msg):
+        int2numeral(unknown_value, case="nominative", num_class="quantitative")
+
+
+def test_int2numeral_invalid_number_form():
     with pytest.warns(UserWarning):
         int2numeral(200, num_class="collective")
 
 
-def test_morph_forms():
+def test_int2numeral_numbers_morph_forms():
+    # Auto collected from https://www.kyivdictionary.com/uk/words/number-spelling
     assert (
-        int2numeral(666777888999, case="nominative", num_class="quantitative")
+        int2numeral(666777888999, case="nominative", num_class="quantitative")[
+            "numeral"
+        ]
         == "шістсот шістдесят шість мільярдів сімсот сімдесят сім мільйонів вісімсот "
         "вісімдесят вісім тисяч дев’ятсот дев’яносто дев’ять"
     )
 
     assert (
-        int2numeral(666777888999, case="genetive", num_class="quantitative")
+        int2numeral(666777888999, case="genetive", num_class="quantitative")["numeral"]
         == "шестисот шістдесяти (шістдесятьох) шести (шістьох) мільярдів семисот "
         "сімдесяти (сімдесятьох) семи (сімох) мільйонів восьмисот вісімдесяти "
         "(вісімдесятьох) восьми (вісьмох) тисяч дев’ятисот дев’яноста дев’яти "
@@ -31,7 +81,7 @@ def test_morph_forms():
     )
 
     assert (
-        int2numeral(666777888999, case="dative", num_class="quantitative")
+        int2numeral(666777888999, case="dative", num_class="quantitative")["numeral"]
         == "шестистам шістдесяти (шістдесятьом) шести (шістьом) мільярдам семистам "
         "сімдесяти (сімдесятьом) семи (сімом) мільйонам восьмистам вісімдесяти "
         "(вісімдесятьом) восьми (вісьмом) тисячам дев’ятистам дев’яноста "
@@ -39,13 +89,17 @@ def test_morph_forms():
     )
 
     assert (
-        int2numeral(666777888999, case="accusative", num_class="quantitative")
+        int2numeral(666777888999, case="accusative", num_class="quantitative")[
+            "numeral"
+        ]
         == "шістсот шістдесят шість мільярдів сімсот сімдесят сім мільйонів вісімсот "
         "вісімдесят вісім тисяч дев’ятсот дев’яносто дев’ять (дев’ятьох)"
     )
 
     assert (
-        int2numeral(666777888999, case="instrumental", num_class="quantitative")
+        int2numeral(666777888999, case="instrumental", num_class="quantitative")[
+            "numeral"
+        ]
         == "шістьмастами (шістьомастами) шістдесятьма (шістдесятьома) шістьма "
         "(шістьома) мільярдами сьомастами (сімомастами) сімдесятьма (сімдесятьома) "
         "сімома (сьома) мільйонами вісьмастами (вісьмомастами) вісімдесятьма "
@@ -54,7 +108,9 @@ def test_morph_forms():
     )
 
     assert (
-        int2numeral(666777888999, case="prepositional", num_class="quantitative")
+        int2numeral(666777888999, case="prepositional", num_class="quantitative")[
+            "numeral"
+        ]
         == "шестистах шістдесяти (шістдесятьох) шести (шістьох) мільярдах семистах "
         "сімдесяти (сімдесятьох) семи (сімох) мільйонах восьмистах вісімдесяти "
         "(вісімдесятьох) восьми (вісьмох) тисячах дев’ятистах дев’яноста дев’яти "
@@ -68,7 +124,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="masculine",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістдесят шість мільярдів сімсот сімдесят сім мільйонів вісімсот "
         "вісімдесят вісім тисяч дев’ятсот дев’яносто дев’ятий"
     )
@@ -80,7 +136,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістдесят шість мільярдів сімсот сімдесят сім мільйонів вісімсот "
         "вісімдесят вісім тисяч дев’ятсот дев’яносто дев’ята"
     )
@@ -92,7 +148,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістдесят шість мільярдів сімсот сімдесят сім мільйонів вісімсот "
         "вісімдесят вісім тисяч дев’ятсот дев’яносто дев’яте"
     )
@@ -100,7 +156,7 @@ def test_morph_forms():
     assert (
         int2numeral(
             666777888999, case="nominative", num_class="ordinal", number="plural"
-        )
+        )["numeral"]
         == "шістсот шістдесят шість мільярдів сімсот сімдесят сім мільйонів вісімсот "
         "вісімдесят вісім тисяч дев’ятсот дев’яносто дев’яті"
     )
@@ -112,7 +168,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="masculine",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістдесят шість мільярдів сімсот сімдесят сім мільйонів вісімсот "
         "вісімдесят вісім тисяч дев’ятсот дев’яносто дев’ятого"
     )
@@ -124,7 +180,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістдесят шість мільярдів сімсот сімдесят сім мільйонів вісімсот "
         "вісімдесят вісім тисяч дев’ятсот дев’яносто дев’ятої"
     )
@@ -136,13 +192,15 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістдесят шість мільярдів сімсот сімдесят сім мільйонів вісімсот "
         "вісімдесят вісім тисяч дев’ятсот дев’яносто дев’ятого"
     )
 
     assert (
-        int2numeral(666777888999, case="genetive", num_class="ordinal", number="plural")
+        int2numeral(
+            666777888999, case="genetive", num_class="ordinal", number="plural"
+        )["numeral"]
         == "шістсот шістдесят шість мільярдів сімсот сімдесят сім мільйонів вісімсот "
         "вісімдесят вісім тисяч дев’ятсот дев’яносто дев’ятих"
     )
@@ -154,7 +212,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="masculine",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістдесят шість мільярдів сімсот сімдесят сім мільйонів вісімсот "
         "вісімдесят вісім тисяч дев’ятсот дев’яносто дев’ятому"
     )
@@ -166,7 +224,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістдесят шість мільярдів сімсот сімдесят сім мільйонів вісімсот "
         "вісімдесят вісім тисяч дев’ятсот дев’яносто дев’ятій"
     )
@@ -178,13 +236,15 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістдесят шість мільярдів сімсот сімдесят сім мільйонів вісімсот "
         "вісімдесят вісім тисяч дев’ятсот дев’яносто дев’ятому"
     )
 
     assert (
-        int2numeral(666777888999, case="dative", num_class="ordinal", number="plural")
+        int2numeral(666777888999, case="dative", num_class="ordinal", number="plural")[
+            "numeral"
+        ]
         == "шістсот шістдесят шість мільярдів сімсот сімдесят сім мільйонів вісімсот "
         "вісімдесят вісім тисяч дев’ятсот дев’яносто дев’ятим"
     )
@@ -196,7 +256,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="masculine",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістдесят шість мільярдів сімсот сімдесят сім мільйонів вісімсот "
         "вісімдесят вісім тисяч дев’ятсот дев’яносто дев’ятий (дев’ятого)"
     )
@@ -208,7 +268,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістдесят шість мільярдів сімсот сімдесят сім мільйонів вісімсот "
         "вісімдесят вісім тисяч дев’ятсот дев’яносто дев’яту"
     )
@@ -220,7 +280,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістдесят шість мільярдів сімсот сімдесят сім мільйонів вісімсот "
         "вісімдесят вісім тисяч дев’ятсот дев’яносто дев’яте"
     )
@@ -228,7 +288,7 @@ def test_morph_forms():
     assert (
         int2numeral(
             666777888999, case="accusative", num_class="ordinal", number="plural"
-        )
+        )["numeral"]
         == "шістсот шістдесят шість мільярдів сімсот сімдесят сім мільйонів вісімсот "
         "вісімдесят вісім тисяч дев’ятсот дев’яносто дев’яті (дев’ятих)"
     )
@@ -240,7 +300,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="masculine",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістдесят шість мільярдів сімсот сімдесят сім мільйонів вісімсот "
         "вісімдесят вісім тисяч дев’ятсот дев’яносто дев’ятим"
     )
@@ -252,7 +312,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістдесят шість мільярдів сімсот сімдесят сім мільйонів вісімсот "
         "вісімдесят вісім тисяч дев’ятсот дев’яносто дев’ятою"
     )
@@ -264,7 +324,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістдесят шість мільярдів сімсот сімдесят сім мільйонів вісімсот "
         "вісімдесят вісім тисяч дев’ятсот дев’яносто дев’ятим"
     )
@@ -272,7 +332,7 @@ def test_morph_forms():
     assert (
         int2numeral(
             666777888999, case="instrumental", num_class="ordinal", number="plural"
-        )
+        )["numeral"]
         == "шістсот шістдесят шість мільярдів сімсот сімдесят сім мільйонів вісімсот "
         "вісімдесят вісім тисяч дев’ятсот дев’яносто дев’ятими"
     )
@@ -284,7 +344,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="masculine",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістдесят шість мільярдів сімсот сімдесят сім мільйонів вісімсот "
         "вісімдесят вісім тисяч дев’ятсот дев’яносто дев’ятому (дев’ятім)"
     )
@@ -296,7 +356,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістдесят шість мільярдів сімсот сімдесят сім мільйонів вісімсот "
         "вісімдесят вісім тисяч дев’ятсот дев’яносто дев’ятій"
     )
@@ -308,7 +368,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістдесят шість мільярдів сімсот сімдесят сім мільйонів вісімсот "
         "вісімдесят вісім тисяч дев’ятсот дев’яносто дев’ятому (дев’ятім)"
     )
@@ -316,19 +376,23 @@ def test_morph_forms():
     assert (
         int2numeral(
             666777888999, case="prepositional", num_class="ordinal", number="plural"
-        )
+        )["numeral"]
         == "шістсот шістдесят шість мільярдів сімсот сімдесят сім мільйонів вісімсот "
         "вісімдесят вісім тисяч дев’ятсот дев’яносто дев’ятих"
     )
 
     assert (
-        int2numeral(221222333444555, case="nominative", num_class="quantitative")
+        int2numeral(221222333444555, case="nominative", num_class="quantitative")[
+            "numeral"
+        ]
         == "двісті двадцять один трильйон двісті двадцять два мільярди триста тридцять "
         "три мільйони чотириста сорок чотири тисячі п’ятсот п’ятдесят п’ять"
     )
 
     assert (
-        int2numeral(221222333444555, case="genetive", num_class="quantitative")
+        int2numeral(221222333444555, case="genetive", num_class="quantitative")[
+            "numeral"
+        ]
         == "двохсот двадцяти (двадцятьох) одного трильйона двохсот двадцяти "
         "(двадцятьох) двох мільярдів трьохсот тридцяти (тридцятьох) трьох мільйонів "
         "чотирьохсот сорока чотирьох тисяч п’ятисот п’ятдесяти (п’ятдесятьох) "
@@ -336,7 +400,7 @@ def test_morph_forms():
     )
 
     assert (
-        int2numeral(221222333444555, case="dative", num_class="quantitative")
+        int2numeral(221222333444555, case="dative", num_class="quantitative")["numeral"]
         == "двомстам двадцяти (двадцятьом) одному трильйону (трильйонові) двомстам "
         "двадцяти (двадцятьом) двом мільярдам трьомстам тридцяти (тридцятьом) "
         "трьом мільйонам чотирьомстам сорока чотирьом тисячам п’ятистам п’ятдесяти "
@@ -344,14 +408,18 @@ def test_morph_forms():
     )
 
     assert (
-        int2numeral(221222333444555, case="accusative", num_class="quantitative")
+        int2numeral(221222333444555, case="accusative", num_class="quantitative")[
+            "numeral"
+        ]
         == "двісті двадцять один трильйон двісті двадцять два мільярди триста тридцять "
         "три мільйони чотириста сорок чотири тисячі п’ятсот п’ятдесят "
         "(п’ятдесятьох) п’ять (п’ятьох)"
     )
 
     assert (
-        int2numeral(221222333444555, case="instrumental", num_class="quantitative")
+        int2numeral(221222333444555, case="instrumental", num_class="quantitative")[
+            "numeral"
+        ]
         == "двомастами двадцятьма (двадцятьома) одним трильйоном двомастами "
         "двадцятьма (двадцятьома) двома мільярдами трьомастами тридцятьма "
         "(тридцятьома) трьома мільйонами чотирмастами сорока чотирма тисячами "
@@ -359,7 +427,9 @@ def test_morph_forms():
     )
 
     assert (
-        int2numeral(221222333444555, case="prepositional", num_class="quantitative")
+        int2numeral(221222333444555, case="prepositional", num_class="quantitative")[
+            "numeral"
+        ]
         == "двохстах двадцяти (двадцятьох) одному (однім) трильйоні двохстах двадцяти "
         "(двадцятьох) двох мільярдах трьохстах тридцяти (тридцятьох) трьох "
         "мільйонах чотирьохстах сорока чотирьох тисячах п’ятистах п’ятдесяти "
@@ -373,7 +443,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="masculine",
             number="singular",
-        )
+        )["numeral"]
         == "двісті двадцять один трильйон двісті двадцять два мільярди триста "
         "тридцять три мільйони чотириста сорок чотири тисячі п’ятсот п’ятдесят п’ятий"
     )
@@ -385,7 +455,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "двісті двадцять один трильйон двісті двадцять два мільярди триста "
         "тридцять три мільйони чотириста сорок чотири тисячі п’ятсот п’ятдесят п’ята"
     )
@@ -397,7 +467,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "двісті двадцять один трильйон двісті двадцять два мільярди триста "
         "тридцять три мільйони чотириста сорок чотири тисячі п’ятсот п’ятдесят п’яте"
     )
@@ -405,7 +475,7 @@ def test_morph_forms():
     assert (
         int2numeral(
             221222333444555, case="nominative", num_class="ordinal", number="plural"
-        )
+        )["numeral"]
         == "двісті двадцять один трильйон двісті двадцять два мільярди триста "
         "тридцять три мільйони чотириста сорок чотири тисячі п’ятсот п’ятдесят п’яті"
     )
@@ -417,7 +487,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="masculine",
             number="singular",
-        )
+        )["numeral"]
         == "двісті двадцять один трильйон двісті двадцять два мільярди триста "
         "тридцять три мільйони чотириста сорок чотири тисячі п’ятсот п’ятдесят п’ятого"
     )
@@ -429,7 +499,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "двісті двадцять один трильйон двісті двадцять два мільярди триста "
         "тридцять три мільйони чотириста сорок чотири тисячі п’ятсот п’ятдесят п’ятої"
     )
@@ -441,7 +511,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "двісті двадцять один трильйон двісті двадцять два мільярди триста "
         "тридцять три мільйони чотириста сорок чотири тисячі п’ятсот п’ятдесят п’ятого"
     )
@@ -449,7 +519,7 @@ def test_morph_forms():
     assert (
         int2numeral(
             221222333444555, case="genetive", num_class="ordinal", number="plural"
-        )
+        )["numeral"]
         == "двісті двадцять один трильйон двісті двадцять два мільярди триста "
         "тридцять три мільйони чотириста сорок чотири тисячі п’ятсот п’ятдесят п’ятих"
     )
@@ -461,7 +531,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="masculine",
             number="singular",
-        )
+        )["numeral"]
         == "двісті двадцять один трильйон двісті двадцять два мільярди триста "
         "тридцять три мільйони чотириста сорок чотири тисячі п’ятсот п’ятдесят п’ятому"
     )
@@ -473,7 +543,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "двісті двадцять один трильйон двісті двадцять два мільярди триста "
         "тридцять три мільйони чотириста сорок чотири тисячі п’ятсот п’ятдесят п’ятій"
     )
@@ -485,7 +555,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "двісті двадцять один трильйон двісті двадцять два мільярди триста "
         "тридцять три мільйони чотириста сорок чотири тисячі п’ятсот п’ятдесят п’ятому"
     )
@@ -493,7 +563,7 @@ def test_morph_forms():
     assert (
         int2numeral(
             221222333444555, case="dative", num_class="ordinal", number="plural"
-        )
+        )["numeral"]
         == "двісті двадцять один трильйон двісті двадцять два мільярди триста "
         "тридцять три мільйони чотириста сорок чотири тисячі п’ятсот п’ятдесят п’ятим"
     )
@@ -505,7 +575,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="masculine",
             number="singular",
-        )
+        )["numeral"]
         == "двісті двадцять один трильйон двісті двадцять два мільярди триста "
         "тридцять три мільйони чотириста сорок чотири тисячі п’ятсот п’ятдесят "
         "п’ятий (п’ятого)"
@@ -518,7 +588,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "двісті двадцять один трильйон двісті двадцять два мільярди триста "
         "тридцять три мільйони чотириста сорок чотири тисячі п’ятсот п’ятдесят п’яту"
     )
@@ -530,7 +600,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "двісті двадцять один трильйон двісті двадцять два мільярди триста "
         "тридцять три мільйони чотириста сорок чотири тисячі п’ятсот п’ятдесят п’яте"
     )
@@ -538,7 +608,7 @@ def test_morph_forms():
     assert (
         int2numeral(
             221222333444555, case="accusative", num_class="ordinal", number="plural"
-        )
+        )["numeral"]
         == "двісті двадцять один трильйон двісті двадцять два мільярди триста "
         "тридцять три мільйони чотириста сорок чотири тисячі п’ятсот п’ятдесят "
         "п’яті (п’ятих)"
@@ -551,7 +621,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="masculine",
             number="singular",
-        )
+        )["numeral"]
         == "двісті двадцять один трильйон двісті двадцять два мільярди триста "
         "тридцять три мільйони чотириста сорок чотири тисячі п’ятсот п’ятдесят п’ятим"
     )
@@ -563,7 +633,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "двісті двадцять один трильйон двісті двадцять два мільярди триста "
         "тридцять три мільйони чотириста сорок чотири тисячі п’ятсот п’ятдесят п’ятою"
     )
@@ -575,7 +645,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "двісті двадцять один трильйон двісті двадцять два мільярди триста "
         "тридцять три мільйони чотириста сорок чотири тисячі п’ятсот п’ятдесят п’ятим"
     )
@@ -583,7 +653,7 @@ def test_morph_forms():
     assert (
         int2numeral(
             221222333444555, case="instrumental", num_class="ordinal", number="plural"
-        )
+        )["numeral"]
         == "двісті двадцять один трильйон двісті двадцять два мільярди триста "
         "тридцять три мільйони чотириста сорок чотири тисячі п’ятсот п’ятдесят п’ятими"
     )
@@ -595,7 +665,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="masculine",
             number="singular",
-        )
+        )["numeral"]
         == "двісті двадцять один трильйон двісті двадцять два мільярди триста "
         "тридцять три мільйони чотириста сорок чотири тисячі п’ятсот п’ятдесят "
         "п’ятому (п’ятім)"
@@ -608,7 +678,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "двісті двадцять один трильйон двісті двадцять два мільярди триста "
         "тридцять три мільйони чотириста сорок чотири тисячі п’ятсот п’ятдесят п’ятій"
     )
@@ -620,7 +690,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "двісті двадцять один трильйон двісті двадцять два мільярди триста "
         "тридцять три мільйони чотириста сорок чотири тисячі п’ятсот п’ятдесят "
         "п’ятому (п’ятім)"
@@ -629,26 +699,30 @@ def test_morph_forms():
     assert (
         int2numeral(
             221222333444555, case="prepositional", num_class="ordinal", number="plural"
-        )
+        )["numeral"]
         == "двісті двадцять один трильйон двісті двадцять два мільярди триста "
         "тридцять три мільйони чотириста сорок чотири тисячі п’ятсот п’ятдесят п’ятих"
     )
 
     assert (
-        int2numeral(111212313415515, case="nominative", num_class="quantitative")
+        int2numeral(111212313415515, case="nominative", num_class="quantitative")[
+            "numeral"
+        ]
         == "сто одинадцять трильйонів двісті дванадцять мільярдів триста тринадцять "
         "мільйонів чотириста п’ятнадцять тисяч п’ятсот п’ятнадцять"
     )
 
     assert (
-        int2numeral(111212313415515, case="genetive", num_class="quantitative")
+        int2numeral(111212313415515, case="genetive", num_class="quantitative")[
+            "numeral"
+        ]
         == "ста одинадцяти (одинадцятьох) трильйонів двохсот дванадцяти (дванадцятьох) "
         "мільярдів трьохсот тринадцяти (тринадцятьох) мільйонів чотирьохсот "
         "п’ятнадцяти (п’ятнадцятьох) тисяч п’ятисот п’ятнадцяти (п’ятнадцятьох)"
     )
 
     assert (
-        int2numeral(111212313415515, case="dative", num_class="quantitative")
+        int2numeral(111212313415515, case="dative", num_class="quantitative")["numeral"]
         == "ста одинадцяти (одинадцятьом) трильйонам двомстам дванадцяти "
         "(дванадцятьом) мільярдам трьомстам тринадцяти (тринадцятьом) мільйонам "
         "чотирьомстам п’ятнадцяти (п’ятнадцятьом) тисячам п’ятистам "
@@ -656,13 +730,17 @@ def test_morph_forms():
     )
 
     assert (
-        int2numeral(111212313415515, case="accusative", num_class="quantitative")
+        int2numeral(111212313415515, case="accusative", num_class="quantitative")[
+            "numeral"
+        ]
         == "сто одинадцять трильйонів двісті дванадцять мільярдів триста тринадцять "
         "мільйонів чотириста п’ятнадцять тисяч п’ятсот п’ятнадцять (п’ятнадцятьох)"
     )
 
     assert (
-        int2numeral(111212313415515, case="instrumental", num_class="quantitative")
+        int2numeral(111212313415515, case="instrumental", num_class="quantitative")[
+            "numeral"
+        ]
         == "ста одинадцятьма (одинадцятьома) трильйонами двомастами дванадцятьма "
         "(дванадцятьома) мільярдами трьомастами тринадцятьма (тринадцятьома) "
         "мільйонами чотирмастами п’ятнадцятьма (п’ятнадцятьома) тисячами "
@@ -670,7 +748,9 @@ def test_morph_forms():
     )
 
     assert (
-        int2numeral(111212313415515, case="prepositional", num_class="quantitative")
+        int2numeral(111212313415515, case="prepositional", num_class="quantitative")[
+            "numeral"
+        ]
         == "ста одинадцяти (одинадцятьох) трильйонах двохстах дванадцяти "
         "(дванадцятьох) мільярдах трьохстах тринадцяти (тринадцятьох) мільйонах "
         "чотирьохстах п’ятнадцяти (п’ятнадцятьох) тисячах п’ятистах п’ятнадцяти "
@@ -684,7 +764,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="masculine",
             number="singular",
-        )
+        )["numeral"]
         == "сто одинадцять трильйонів двісті дванадцять мільярдів триста тринадцять "
         "мільйонів чотириста п’ятнадцять тисяч п’ятсот п’ятнадцятий"
     )
@@ -696,7 +776,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "сто одинадцять трильйонів двісті дванадцять мільярдів триста тринадцять "
         "мільйонів чотириста п’ятнадцять тисяч п’ятсот п’ятнадцята"
     )
@@ -708,7 +788,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "сто одинадцять трильйонів двісті дванадцять мільярдів триста тринадцять "
         "мільйонів чотириста п’ятнадцять тисяч п’ятсот п’ятнадцяте"
     )
@@ -716,7 +796,7 @@ def test_morph_forms():
     assert (
         int2numeral(
             111212313415515, case="nominative", num_class="ordinal", number="plural"
-        )
+        )["numeral"]
         == "сто одинадцять трильйонів двісті дванадцять мільярдів триста тринадцять "
         "мільйонів чотириста п’ятнадцять тисяч п’ятсот п’ятнадцяті"
     )
@@ -728,7 +808,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="masculine",
             number="singular",
-        )
+        )["numeral"]
         == "сто одинадцять трильйонів двісті дванадцять мільярдів триста тринадцять "
         "мільйонів чотириста п’ятнадцять тисяч п’ятсот п’ятнадцятого"
     )
@@ -740,7 +820,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "сто одинадцять трильйонів двісті дванадцять мільярдів триста тринадцять "
         "мільйонів чотириста п’ятнадцять тисяч п’ятсот п’ятнадцятої"
     )
@@ -752,7 +832,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "сто одинадцять трильйонів двісті дванадцять мільярдів триста тринадцять "
         "мільйонів чотириста п’ятнадцять тисяч п’ятсот п’ятнадцятого"
     )
@@ -760,7 +840,7 @@ def test_morph_forms():
     assert (
         int2numeral(
             111212313415515, case="genetive", num_class="ordinal", number="plural"
-        )
+        )["numeral"]
         == "сто одинадцять трильйонів двісті дванадцять мільярдів триста тринадцять "
         "мільйонів чотириста п’ятнадцять тисяч п’ятсот п’ятнадцятих"
     )
@@ -772,7 +852,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="masculine",
             number="singular",
-        )
+        )["numeral"]
         == "сто одинадцять трильйонів двісті дванадцять мільярдів триста тринадцять "
         "мільйонів чотириста п’ятнадцять тисяч п’ятсот п’ятнадцятому"
     )
@@ -784,7 +864,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "сто одинадцять трильйонів двісті дванадцять мільярдів триста тринадцять "
         "мільйонів чотириста п’ятнадцять тисяч п’ятсот п’ятнадцятій"
     )
@@ -796,7 +876,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "сто одинадцять трильйонів двісті дванадцять мільярдів триста тринадцять "
         "мільйонів чотириста п’ятнадцять тисяч п’ятсот п’ятнадцятому"
     )
@@ -804,7 +884,7 @@ def test_morph_forms():
     assert (
         int2numeral(
             111212313415515, case="dative", num_class="ordinal", number="plural"
-        )
+        )["numeral"]
         == "сто одинадцять трильйонів двісті дванадцять мільярдів триста тринадцять "
         "мільйонів чотириста п’ятнадцять тисяч п’ятсот п’ятнадцятим"
     )
@@ -816,7 +896,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="masculine",
             number="singular",
-        )
+        )["numeral"]
         == "сто одинадцять трильйонів двісті дванадцять мільярдів триста тринадцять "
         "мільйонів чотириста п’ятнадцять тисяч п’ятсот п’ятнадцятий (п’ятнадцятого)"
     )
@@ -828,7 +908,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "сто одинадцять трильйонів двісті дванадцять мільярдів триста тринадцять "
         "мільйонів чотириста п’ятнадцять тисяч п’ятсот п’ятнадцяту"
     )
@@ -840,7 +920,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "сто одинадцять трильйонів двісті дванадцять мільярдів триста тринадцять "
         "мільйонів чотириста п’ятнадцять тисяч п’ятсот п’ятнадцяте"
     )
@@ -848,7 +928,7 @@ def test_morph_forms():
     assert (
         int2numeral(
             111212313415515, case="accusative", num_class="ordinal", number="plural"
-        )
+        )["numeral"]
         == "сто одинадцять трильйонів двісті дванадцять мільярдів триста тринадцять "
         "мільйонів чотириста п’ятнадцять тисяч п’ятсот п’ятнадцяті (п’ятнадцятих)"
     )
@@ -860,7 +940,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="masculine",
             number="singular",
-        )
+        )["numeral"]
         == "сто одинадцять трильйонів двісті дванадцять мільярдів триста тринадцять "
         "мільйонів чотириста п’ятнадцять тисяч п’ятсот п’ятнадцятим"
     )
@@ -872,7 +952,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "сто одинадцять трильйонів двісті дванадцять мільярдів триста тринадцять "
         "мільйонів чотириста п’ятнадцять тисяч п’ятсот п’ятнадцятою"
     )
@@ -884,7 +964,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "сто одинадцять трильйонів двісті дванадцять мільярдів триста тринадцять "
         "мільйонів чотириста п’ятнадцять тисяч п’ятсот п’ятнадцятим"
     )
@@ -892,7 +972,7 @@ def test_morph_forms():
     assert (
         int2numeral(
             111212313415515, case="instrumental", num_class="ordinal", number="plural"
-        )
+        )["numeral"]
         == "сто одинадцять трильйонів двісті дванадцять мільярдів триста тринадцять "
         "мільйонів чотириста п’ятнадцять тисяч п’ятсот п’ятнадцятими"
     )
@@ -904,7 +984,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="masculine",
             number="singular",
-        )
+        )["numeral"]
         == "сто одинадцять трильйонів двісті дванадцять мільярдів триста тринадцять "
         "мільйонів чотириста п’ятнадцять тисяч п’ятсот п’ятнадцятому (п’ятнадцятім)"
     )
@@ -916,7 +996,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "сто одинадцять трильйонів двісті дванадцять мільярдів триста тринадцять "
         "мільйонів чотириста п’ятнадцять тисяч п’ятсот п’ятнадцятій"
     )
@@ -928,7 +1008,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "сто одинадцять трильйонів двісті дванадцять мільярдів триста тринадцять "
         "мільйонів чотириста п’ятнадцять тисяч п’ятсот п’ятнадцятому (п’ятнадцятім)"
     )
@@ -936,39 +1016,45 @@ def test_morph_forms():
     assert (
         int2numeral(
             111212313415515, case="prepositional", num_class="ordinal", number="plural"
-        )
+        )["numeral"]
         == "сто одинадцять трильйонів двісті дванадцять мільярдів триста тринадцять "
         "мільйонів чотириста п’ятнадцять тисяч п’ятсот п’ятнадцятих"
     )
 
     assert (
-        int2numeral(616717818919, case="nominative", num_class="quantitative")
+        int2numeral(616717818919, case="nominative", num_class="quantitative")[
+            "numeral"
+        ]
         == "шістсот шістнадцять мільярдів сімсот сімнадцять мільйонів вісімсот "
         "вісімнадцять тисяч дев’ятсот дев’ятнадцять"
     )
 
     assert (
-        int2numeral(616717818919, case="genetive", num_class="quantitative")
+        int2numeral(616717818919, case="genetive", num_class="quantitative")["numeral"]
         == "шестисот шістнадцяти (шістнадцятьох) мільярдів семисот сімнадцяти "
         "(сімнадцятьох) мільйонів восьмисот вісімнадцяти (вісімнадцятьох) "
         "тисяч дев’ятисот дев’ятнадцяти (дев’ятнадцятьох)"
     )
 
     assert (
-        int2numeral(616717818919, case="dative", num_class="quantitative")
+        int2numeral(616717818919, case="dative", num_class="quantitative")["numeral"]
         == "шестистам шістнадцяти (шістнадцятьом) мільярдам семистам сімнадцяти "
         "(сімнадцятьом) мільйонам восьмистам вісімнадцяти (вісімнадцятьом) тисячам "
         "дев’ятистам дев’ятнадцяти (дев’ятнадцятьом)"
     )
 
     assert (
-        int2numeral(616717818919, case="accusative", num_class="quantitative")
+        int2numeral(616717818919, case="accusative", num_class="quantitative")[
+            "numeral"
+        ]
         == "шістсот шістнадцять мільярдів сімсот сімнадцять мільйонів вісімсот "
         "вісімнадцять тисяч дев’ятсот дев’ятнадцять (дев’ятнадцятьох)"
     )
 
     assert (
-        int2numeral(616717818919, case="instrumental", num_class="quantitative")
+        int2numeral(616717818919, case="instrumental", num_class="quantitative")[
+            "numeral"
+        ]
         == "шістьмастами (шістьомастами) шістнадцятьма (шістнадцятьома) мільярдами "
         "сьомастами (сімомастами) сімнадцятьма (сімнадцятьома) мільйонами "
         "вісьмастами (вісьмомастами) вісімнадцятьма (вісімнадцятьома) тисячами "
@@ -976,7 +1062,9 @@ def test_morph_forms():
     )
 
     assert (
-        int2numeral(616717818919, case="prepositional", num_class="quantitative")
+        int2numeral(616717818919, case="prepositional", num_class="quantitative")[
+            "numeral"
+        ]
         == "шестистах шістнадцяти (шістнадцятьох) мільярдах семистах сімнадцяти "
         "(сімнадцятьох) мільйонах восьмистах вісімнадцяти (вісімнадцятьох) "
         "тисячах дев’ятистах дев’ятнадцяти (дев’ятнадцятьох)"
@@ -989,7 +1077,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="masculine",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістнадцять мільярдів сімсот сімнадцять мільйонів вісімсот "
         "вісімнадцять тисяч дев’ятсот дев’ятнадцятий"
     )
@@ -1001,7 +1089,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістнадцять мільярдів сімсот сімнадцять мільйонів вісімсот "
         "вісімнадцять тисяч дев’ятсот дев’ятнадцята"
     )
@@ -1013,7 +1101,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістнадцять мільярдів сімсот сімнадцять мільйонів вісімсот "
         "вісімнадцять тисяч дев’ятсот дев’ятнадцяте"
     )
@@ -1021,7 +1109,7 @@ def test_morph_forms():
     assert (
         int2numeral(
             616717818919, case="nominative", num_class="ordinal", number="plural"
-        )
+        )["numeral"]
         == "шістсот шістнадцять мільярдів сімсот сімнадцять мільйонів вісімсот "
         "вісімнадцять тисяч дев’ятсот дев’ятнадцяті"
     )
@@ -1033,7 +1121,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="masculine",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістнадцять мільярдів сімсот сімнадцять мільйонів вісімсот "
         "вісімнадцять тисяч дев’ятсот дев’ятнадцятого"
     )
@@ -1045,7 +1133,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістнадцять мільярдів сімсот сімнадцять мільйонів вісімсот "
         "вісімнадцять тисяч дев’ятсот дев’ятнадцятої"
     )
@@ -1057,13 +1145,15 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістнадцять мільярдів сімсот сімнадцять мільйонів вісімсот "
         "вісімнадцять тисяч дев’ятсот дев’ятнадцятого"
     )
 
     assert (
-        int2numeral(616717818919, case="genetive", num_class="ordinal", number="plural")
+        int2numeral(
+            616717818919, case="genetive", num_class="ordinal", number="plural"
+        )["numeral"]
         == "шістсот шістнадцять мільярдів сімсот сімнадцять мільйонів вісімсот "
         "вісімнадцять тисяч дев’ятсот дев’ятнадцятих"
     )
@@ -1075,7 +1165,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="masculine",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістнадцять мільярдів сімсот сімнадцять мільйонів вісімсот "
         "вісімнадцять тисяч дев’ятсот дев’ятнадцятому"
     )
@@ -1087,7 +1177,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістнадцять мільярдів сімсот сімнадцять мільйонів вісімсот "
         "вісімнадцять тисяч дев’ятсот дев’ятнадцятій"
     )
@@ -1099,13 +1189,15 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістнадцять мільярдів сімсот сімнадцять мільйонів вісімсот "
         "вісімнадцять тисяч дев’ятсот дев’ятнадцятому"
     )
 
     assert (
-        int2numeral(616717818919, case="dative", num_class="ordinal", number="plural")
+        int2numeral(616717818919, case="dative", num_class="ordinal", number="plural")[
+            "numeral"
+        ]
         == "шістсот шістнадцять мільярдів сімсот сімнадцять мільйонів вісімсот "
         "вісімнадцять тисяч дев’ятсот дев’ятнадцятим"
     )
@@ -1117,7 +1209,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="masculine",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістнадцять мільярдів сімсот сімнадцять мільйонів вісімсот "
         "вісімнадцять тисяч дев’ятсот дев’ятнадцятий (дев’ятнадцятого)"
     )
@@ -1129,7 +1221,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістнадцять мільярдів сімсот сімнадцять мільйонів вісімсот "
         "вісімнадцять тисяч дев’ятсот дев’ятнадцяту"
     )
@@ -1141,7 +1233,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістнадцять мільярдів сімсот сімнадцять мільйонів вісімсот "
         "вісімнадцять тисяч дев’ятсот дев’ятнадцяте"
     )
@@ -1149,7 +1241,7 @@ def test_morph_forms():
     assert (
         int2numeral(
             616717818919, case="accusative", num_class="ordinal", number="plural"
-        )
+        )["numeral"]
         == "шістсот шістнадцять мільярдів сімсот сімнадцять мільйонів вісімсот "
         "вісімнадцять тисяч дев’ятсот дев’ятнадцяті (дев’ятнадцятих)"
     )
@@ -1161,7 +1253,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="masculine",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістнадцять мільярдів сімсот сімнадцять мільйонів вісімсот "
         "вісімнадцять тисяч дев’ятсот дев’ятнадцятим"
     )
@@ -1173,7 +1265,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістнадцять мільярдів сімсот сімнадцять мільйонів вісімсот "
         "вісімнадцять тисяч дев’ятсот дев’ятнадцятою"
     )
@@ -1185,7 +1277,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістнадцять мільярдів сімсот сімнадцять мільйонів вісімсот "
         "вісімнадцять тисяч дев’ятсот дев’ятнадцятим"
     )
@@ -1193,7 +1285,7 @@ def test_morph_forms():
     assert (
         int2numeral(
             616717818919, case="instrumental", num_class="ordinal", number="plural"
-        )
+        )["numeral"]
         == "шістсот шістнадцять мільярдів сімсот сімнадцять мільйонів вісімсот "
         "вісімнадцять тисяч дев’ятсот дев’ятнадцятими"
     )
@@ -1205,7 +1297,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="masculine",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістнадцять мільярдів сімсот сімнадцять мільйонів вісімсот "
         "вісімнадцять тисяч дев’ятсот дев’ятнадцятому (дев’ятнадцятім)"
     )
@@ -1217,7 +1309,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістнадцять мільярдів сімсот сімнадцять мільйонів вісімсот "
         "вісімнадцять тисяч дев’ятсот дев’ятнадцятій"
     )
@@ -1229,7 +1321,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "шістсот шістнадцять мільярдів сімсот сімнадцять мільйонів вісімсот "
         "вісімнадцять тисяч дев’ятсот дев’ятнадцятому (дев’ятнадцятім)"
     )
@@ -1237,7 +1329,7 @@ def test_morph_forms():
     assert (
         int2numeral(
             616717818919, case="prepositional", num_class="ordinal", number="plural"
-        )
+        )["numeral"]
         == "шістсот шістнадцять мільярдів сімсот сімнадцять мільйонів вісімсот "
         "вісімнадцять тисяч дев’ятсот дев’ятнадцятих"
     )
@@ -1249,7 +1341,7 @@ def test_morph_forms():
             num_class="quantitative",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "одне (одно)"
     )
 
@@ -1260,7 +1352,7 @@ def test_morph_forms():
             num_class="quantitative",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "однією (одною)"
     )
 
@@ -1271,7 +1363,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "третій"
     )
 
@@ -1282,22 +1374,24 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "четверте"
     )
 
     assert (
-        int2numeral(7, case="instrumental", num_class="quantitative")
+        int2numeral(7, case="instrumental", num_class="quantitative")["numeral"]
         == "сімома (сьома)"
     )
 
     assert (
-        int2numeral(9, case="prepositional", num_class="quantitative")
+        int2numeral(9, case="prepositional", num_class="quantitative")["numeral"]
         == "дев’яти (дев’ятьох)"
     )
 
     assert (
-        int2numeral(13, case="accusative", num_class="ordinal", number="plural")
+        int2numeral(13, case="accusative", num_class="ordinal", number="plural")[
+            "numeral"
+        ]
         == "тринадцяті (тринадцятих)"
     )
 
@@ -1308,7 +1402,7 @@ def test_morph_forms():
             num_class="quantitative",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "двадцять одне (одно)"
     )
 
@@ -1319,7 +1413,7 @@ def test_morph_forms():
             num_class="quantitative",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "двадцятьма (двадцятьома) однією (одною)"
     )
 
@@ -1330,7 +1424,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "двадцять третій"
     )
 
@@ -1341,22 +1435,22 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "двадцять четверте"
     )
 
     assert (
-        int2numeral(27, case="instrumental", num_class="quantitative")
+        int2numeral(27, case="instrumental", num_class="quantitative")["numeral"]
         == "двадцятьма (двадцятьома) сімома (сьома)"
     )
 
     assert (
-        int2numeral(29, case="prepositional", num_class="quantitative")
+        int2numeral(29, case="prepositional", num_class="quantitative")["numeral"]
         == "двадцяти (двадцятьох) дев’яти (дев’ятьох)"
     )
 
     assert (
-        int2numeral(30, case="accusative", num_class="quantitative")
+        int2numeral(30, case="accusative", num_class="quantitative")["numeral"]
         == "тридцять (тридцятьох)"
     )
 
@@ -1367,7 +1461,7 @@ def test_morph_forms():
             num_class="quantitative",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "тридцять одне (одно)"
     )
 
@@ -1378,7 +1472,7 @@ def test_morph_forms():
             num_class="quantitative",
             gender="masculine",
             number="singular",
-        )
+        )["numeral"]
         == "тридцять (тридцятьох) один (одного)"
     )
 
@@ -1389,7 +1483,7 @@ def test_morph_forms():
             num_class="quantitative",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "тридцять (тридцятьох) одну"
     )
 
@@ -1400,12 +1494,14 @@ def test_morph_forms():
             num_class="quantitative",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "тридцять (тридцятьох) одне"
     )
 
     assert (
-        int2numeral(31, case="accusative", num_class="quantitative", number="plural")
+        int2numeral(31, case="accusative", num_class="quantitative", number="plural")[
+            "numeral"
+        ]
         == "тридцять (тридцятьох) одні (одних)"
     )
 
@@ -1416,22 +1512,24 @@ def test_morph_forms():
             num_class="quantitative",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "тридцятьма (тридцятьома) однією (одною)"
     )
 
     assert (
-        int2numeral(32, case="accusative", num_class="quantitative")
+        int2numeral(32, case="accusative", num_class="quantitative")["numeral"]
         == "тридцять (тридцятьох) два (двох)"
     )
 
     assert (
-        int2numeral(32, case="accusative", num_class="quantitative", gender="feminine")
+        int2numeral(32, case="accusative", num_class="quantitative", gender="feminine")[
+            "numeral"
+        ]
         == "тридцять (тридцятьох) дві (двох)"
     )
 
     assert (
-        int2numeral(33, case="accusative", num_class="quantitative")
+        int2numeral(33, case="accusative", num_class="quantitative")["numeral"]
         == "тридцять (тридцятьох) три (трьох)"
     )
 
@@ -1442,12 +1540,12 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "тридцять третій"
     )
 
     assert (
-        int2numeral(34, case="accusative", num_class="quantitative")
+        int2numeral(34, case="accusative", num_class="quantitative")["numeral"]
         == "тридцять (тридцятьох) чотири (чотирьох)"
     )
 
@@ -1458,46 +1556,49 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "тридцять четверте"
     )
 
     assert (
-        int2numeral(35, case="accusative", num_class="quantitative")
+        int2numeral(35, case="accusative", num_class="quantitative")["numeral"]
         == "тридцять (тридцятьох) п’ять (п’ятьох)"
     )
 
     assert (
-        int2numeral(36, case="accusative", num_class="quantitative")
+        int2numeral(36, case="accusative", num_class="quantitative")["numeral"]
         == "тридцять (тридцятьох) шість (шістьох)"
     )
 
     assert (
-        int2numeral(37, case="accusative", num_class="quantitative")
+        int2numeral(37, case="accusative", num_class="quantitative")["numeral"]
         == "тридцять (тридцятьох) сім (сімох)"
     )
 
     assert (
-        int2numeral(37, case="instrumental", num_class="quantitative")
+        int2numeral(37, case="instrumental", num_class="quantitative")["numeral"]
         == "тридцятьма (тридцятьома) сімома (сьома)"
     )
 
     assert (
-        int2numeral(38, case="accusative", num_class="quantitative")
+        int2numeral(38, case="accusative", num_class="quantitative")["numeral"]
         == "тридцять (тридцятьох) вісім (вісьмох)"
     )
 
     assert (
-        int2numeral(39, case="accusative", num_class="quantitative")
+        int2numeral(39, case="accusative", num_class="quantitative")["numeral"]
         == "тридцять (тридцятьох) дев’ять (дев’ятьох)"
     )
 
     assert (
-        int2numeral(39, case="prepositional", num_class="quantitative")
+        int2numeral(39, case="prepositional", num_class="quantitative")["numeral"]
         == "тридцяти (тридцятьох) дев’яти (дев’ятьох)"
     )
 
-    assert int2numeral(40, case="accusative", num_class="quantitative") == "сорок"
+    assert (
+        int2numeral(40, case="accusative", num_class="quantitative")["numeral"]
+        == "сорок"
+    )
 
     assert (
         int2numeral(
@@ -1506,7 +1607,7 @@ def test_morph_forms():
             num_class="quantitative",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "сорок одне (одно)"
     )
 
@@ -1517,7 +1618,7 @@ def test_morph_forms():
             num_class="quantitative",
             gender="masculine",
             number="singular",
-        )
+        )["numeral"]
         == "сорок один (одного)"
     )
 
@@ -1528,7 +1629,7 @@ def test_morph_forms():
             num_class="quantitative",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "сорок одну"
     )
 
@@ -1539,12 +1640,14 @@ def test_morph_forms():
             num_class="quantitative",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "сорок одне"
     )
 
     assert (
-        int2numeral(41, case="accusative", num_class="quantitative", number="plural")
+        int2numeral(41, case="accusative", num_class="quantitative", number="plural")[
+            "numeral"
+        ]
         == "сорок одні (одних)"
     )
 
@@ -1555,22 +1658,24 @@ def test_morph_forms():
             num_class="quantitative",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "сорока однією (одною)"
     )
 
     assert (
-        int2numeral(42, case="accusative", num_class="quantitative")
+        int2numeral(42, case="accusative", num_class="quantitative")["numeral"]
         == "сорок два (двох)"
     )
 
     assert (
-        int2numeral(42, case="accusative", num_class="quantitative", gender="feminine")
+        int2numeral(42, case="accusative", num_class="quantitative", gender="feminine")[
+            "numeral"
+        ]
         == "сорок дві (двох)"
     )
 
     assert (
-        int2numeral(43, case="accusative", num_class="quantitative")
+        int2numeral(43, case="accusative", num_class="quantitative")["numeral"]
         == "сорок три (трьох)"
     )
 
@@ -1581,12 +1686,12 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "сорок третій"
     )
 
     assert (
-        int2numeral(44, case="accusative", num_class="quantitative")
+        int2numeral(44, case="accusative", num_class="quantitative")["numeral"]
         == "сорок чотири (чотирьох)"
     )
 
@@ -1597,47 +1702,49 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "сорок четверте"
     )
 
     assert (
-        int2numeral(45, case="accusative", num_class="quantitative")
+        int2numeral(45, case="accusative", num_class="quantitative")["numeral"]
         == "сорок п’ять (п’ятьох)"
     )
 
     assert (
-        int2numeral(46, case="accusative", num_class="quantitative")
+        int2numeral(46, case="accusative", num_class="quantitative")["numeral"]
         == "сорок шість (шістьох)"
     )
 
     assert (
-        int2numeral(47, case="accusative", num_class="quantitative")
+        int2numeral(47, case="accusative", num_class="quantitative")["numeral"]
         == "сорок сім (сімох)"
     )
 
     assert (
-        int2numeral(47, case="instrumental", num_class="quantitative")
+        int2numeral(47, case="instrumental", num_class="quantitative")["numeral"]
         == "сорока сімома (сьома)"
     )
 
     assert (
-        int2numeral(48, case="accusative", num_class="quantitative")
+        int2numeral(48, case="accusative", num_class="quantitative")["numeral"]
         == "сорок вісім (вісьмох)"
     )
 
     assert (
-        int2numeral(49, case="accusative", num_class="quantitative")
+        int2numeral(49, case="accusative", num_class="quantitative")["numeral"]
         == "сорок дев’ять (дев’ятьох)"
     )
 
     assert (
-        int2numeral(49, case="prepositional", num_class="quantitative")
+        int2numeral(49, case="prepositional", num_class="quantitative")["numeral"]
         == "сорока дев’яти (дев’ятьох)"
     )
 
     assert (
-        int2numeral(50, case="genetive", num_class="ordinal", number="plural")
+        int2numeral(50, case="genetive", num_class="ordinal", number="plural")[
+            "numeral"
+        ]
         == "п’ятдесятих"
     )
 
@@ -1648,7 +1755,7 @@ def test_morph_forms():
             num_class="quantitative",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "п’ятдесят одне (одно)"
     )
 
@@ -1659,7 +1766,7 @@ def test_morph_forms():
             num_class="quantitative",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "п’ятдесятьма (п’ятдесятьома) однією (одною)"
     )
 
@@ -1670,7 +1777,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "п’ятдесят третій"
     )
 
@@ -1681,17 +1788,17 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "п’ятдесят четверте"
     )
 
     assert (
-        int2numeral(57, case="instrumental", num_class="quantitative")
+        int2numeral(57, case="instrumental", num_class="quantitative")["numeral"]
         == "п’ятдесятьма (п’ятдесятьома) сімома (сьома)"
     )
 
     assert (
-        int2numeral(59, case="prepositional", num_class="quantitative")
+        int2numeral(59, case="prepositional", num_class="quantitative")["numeral"]
         == "п’ятдесяти (п’ятдесятьох) дев’яти (дев’ятьох)"
     )
 
@@ -1702,7 +1809,7 @@ def test_morph_forms():
             num_class="quantitative",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "шістдесят одне (одно)"
     )
 
@@ -1713,7 +1820,7 @@ def test_morph_forms():
             num_class="quantitative",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "шістдесятьма (шістдесятьома) однією (одною)"
     )
 
@@ -1724,7 +1831,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "шістдесят третій"
     )
 
@@ -1735,17 +1842,17 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "шістдесят четверте"
     )
 
     assert (
-        int2numeral(67, case="instrumental", num_class="quantitative")
+        int2numeral(67, case="instrumental", num_class="quantitative")["numeral"]
         == "шістдесятьма (шістдесятьома) сімома (сьома)"
     )
 
     assert (
-        int2numeral(69, case="prepositional", num_class="quantitative")
+        int2numeral(69, case="prepositional", num_class="quantitative")["numeral"]
         == "шістдесяти (шістдесятьох) дев’яти (дев’ятьох)"
     )
 
@@ -1756,7 +1863,7 @@ def test_morph_forms():
             num_class="quantitative",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "сімдесят одне (одно)"
     )
 
@@ -1767,7 +1874,7 @@ def test_morph_forms():
             num_class="quantitative",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "сімдесятьма (сімдесятьома) однією (одною)"
     )
 
@@ -1778,7 +1885,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "сімдесят третій"
     )
 
@@ -1789,17 +1896,17 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "сімдесят четверте"
     )
 
     assert (
-        int2numeral(77, case="instrumental", num_class="quantitative")
+        int2numeral(77, case="instrumental", num_class="quantitative")["numeral"]
         == "сімдесятьма (сімдесятьома) сімома (сьома)"
     )
 
     assert (
-        int2numeral(79, case="prepositional", num_class="quantitative")
+        int2numeral(79, case="prepositional", num_class="quantitative")["numeral"]
         == "сімдесяти (сімдесятьох) дев’яти (дев’ятьох)"
     )
 
@@ -1810,7 +1917,7 @@ def test_morph_forms():
             num_class="quantitative",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "вісімдесят одне (одно)"
     )
 
@@ -1821,7 +1928,7 @@ def test_morph_forms():
             num_class="quantitative",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "вісімдесятьма (вісімдесятьома) однією (одною)"
     )
 
@@ -1832,7 +1939,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "вісімдесят третій"
     )
 
@@ -1843,17 +1950,17 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "вісімдесят четверте"
     )
 
     assert (
-        int2numeral(87, case="instrumental", num_class="quantitative")
+        int2numeral(87, case="instrumental", num_class="quantitative")["numeral"]
         == "вісімдесятьма (вісімдесятьома) сімома (сьома)"
     )
 
     assert (
-        int2numeral(89, case="prepositional", num_class="quantitative")
+        int2numeral(89, case="prepositional", num_class="quantitative")["numeral"]
         == "вісімдесяти (вісімдесятьох) дев’яти (дев’ятьох)"
     )
 
@@ -1864,7 +1971,7 @@ def test_morph_forms():
             num_class="quantitative",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "дев’яносто одне (одно)"
     )
 
@@ -1875,7 +1982,7 @@ def test_morph_forms():
             num_class="quantitative",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "дев’яноста однією (одною)"
     )
 
@@ -1886,7 +1993,7 @@ def test_morph_forms():
             num_class="ordinal",
             gender="feminine",
             number="singular",
-        )
+        )["numeral"]
         == "дев’яносто третій"
     )
 
@@ -1897,16 +2004,16 @@ def test_morph_forms():
             num_class="ordinal",
             gender="neuter",
             number="singular",
-        )
+        )["numeral"]
         == "дев’яносто четверте"
     )
 
     assert (
-        int2numeral(97, case="instrumental", num_class="quantitative")
+        int2numeral(97, case="instrumental", num_class="quantitative")["numeral"]
         == "дев’яноста сімома (сьома)"
     )
 
     assert (
-        int2numeral(99, case="prepositional", num_class="quantitative")
+        int2numeral(99, case="prepositional", num_class="quantitative")["numeral"]
         == "дев’яноста дев’яти (дев’ятьох)"
     )
