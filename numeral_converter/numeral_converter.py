@@ -1,26 +1,23 @@
 import logging
 import math
 import warnings
-from collections import OrderedDict, namedtuple
+from collections import namedtuple
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
 from fuzzy_multi_dict import FuzzyMultiDict
 
+from .constants import DEFAULT_MORPH, MORPH_FORMS
+from .utils import combinations
+
 NumberItem = namedtuple("NumberItem", "value order scale")
 
 DATA_PATH = Path("/Users/tatiana/PycharmProjects/numeral-converter/data")
+
 NUMERAL_TREE: Dict[str, Any] = dict()
-NUMERAL_DATA: pd.DataFrame = dict()
-DEFAULT_MORPH: Dict[str, Any] = OrderedDict(
-    [
-        ("case", "nominative"),
-        ("num_class", "quantitative"),
-        ("number", None),
-        ("gender", "masculine"),
-    ]
-)
+NUMERAL_DATA: Dict[str, pd.DataFrame] = dict()
+
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +29,14 @@ def numeral2int(numeral: str, lang: str = "uk") -> Optional[int]:
     :param numeral: input numeral in language `lang`
     :param lang: language; default 'uk'
     :return Optional [int]: integer value or None if nothing found
+
+    :Example:
+
+    >>> from numeral_converter import load, numeral2int
+    >>> load("uk")
+    >>> numeral2int("дві тисячі двадцять третій", lang="uk")
+    2023
+
     """
     number_items = numeral2number_items(numeral=numeral, lang=lang)
 
@@ -55,7 +60,18 @@ def int2numeral(value: int, lang: str = "uk", **kwargs):
     :return str: string numeral in language `lang` in a morphological form
             given by the argument-parameters
 
+    :Example:
+
+    >>> from numeral_converter import load, int2numeral
+    >>> load("uk")
+    >>> int2numeral(2023, case="nominative", num_class="quantitative")
+    {
+        'numeral': 'дві тисячі двадцять три',
+        'numeral_forms': ['дві тисячі двадцять три', ]
+    }
+
     """
+    __check_kwargs(kwargs)
 
     numeral_items = int2number_items(value)
     numeral = number_items2numeral(
@@ -70,14 +86,34 @@ def int2numeral(value: int, lang: str = "uk", **kwargs):
     return numeral
 
 
+def get_available_languages() -> List[str]:
+    """
+    Check available languages
+
+    :return List[str]: list of available languages identifier
+
+    :Example:
+
+    >>> from numeral_converter import get_available_languages
+    >>> get_available_languages()
+    ['uk', ]
+
+    """
+    return [x.stem for x in DATA_PATH.glob("*.csv")]
+
+
 def load(lang: str = "uk"):
     """
     Loads language `lang` data
 
     :param str lang: language identifier; default is 'uk'
 
+    :Example:
+
+    >>> from numeral_converter import load
+    >>> load('uk')
+
     """
-    global NUMERAL_TREE, NUMERAL_DATA, DEFAULT_MORPH, DATA_PATH
 
     def __update_value(x, y):
         if x is None:
@@ -99,7 +135,7 @@ def load(lang: str = "uk"):
         return x
 
     if NUMERAL_TREE.get(lang) is None and NUMERAL_DATA.get(lang) is None:
-        __available_languages = [x.stem for x in DATA_PATH.glob("*.csv")]
+        __available_languages = get_available_languages()
         if lang not in __available_languages:
             raise ValueError(
                 f"no data for language {lang}; "
@@ -123,9 +159,9 @@ def load(lang: str = "uk"):
                     continue
 
                 data = {
-                    "morph_forms": [
-                        {label: row[label] for label in DEFAULT_MORPH.keys()},
-                    ],
+                    "morph_forms": {
+                        label: row[label] for label in DEFAULT_MORPH.keys()
+                    },
                     "value": row["value"],
                     "order": row["order"],
                     "scale": row["scale"],
@@ -135,8 +171,6 @@ def load(lang: str = "uk"):
 
 
 def numeral2number_items(numeral: str, lang: str):
-    global NUMERAL_TREE
-
     if NUMERAL_TREE.get(lang) is None:
         logger.info(
             f'data for language "{lang}" is not loaded;'
@@ -146,12 +180,36 @@ def numeral2number_items(numeral: str, lang: str):
 
     number_items: List[NumberItem] = list()
 
+    __process_first = False
     for number_word in numeral.split(" ")[::-1]:
 
         if not number_word:
             continue
 
         number_word_info = NUMERAL_TREE[lang].get(number_word)
+        if __process_first:
+            number_word_info__ = [
+                item
+                for item in number_word_info
+                if (
+                    not isinstance(item["value"]["morph_forms"], list)
+                    and item["value"]["morph_forms"].get("num_class") != "ordinal"
+                )
+                or all(
+                    [
+                        (v.get("num_class") is None or v.get("num_class") != "ordinal")
+                        for v in item["value"]["morph_forms"]
+                    ]
+                )
+            ]
+            if len(number_word_info) and not len(number_word_info__):
+                raise ValueError(
+                    "the number in the middle of the numeral cannot be ordinal"
+                )
+            else:
+                number_word_info = number_word_info__
+        else:
+            __process_first = True
 
         if not len(number_word_info):
             raise ValueError(f'can\'t convert "{number_word}" to integer')
@@ -320,7 +378,7 @@ def int2number_items(number: int) -> List[NumberItem]:
 
 
 def int2numeral_word(value: int, lang: str = "uk", **kwargs) -> Dict[str, Any]:
-    global NUMERAL_DATA, DEFAULT_MORPH
+    __check_kwargs(kwargs)
 
     if NUMERAL_DATA.get(lang) is None:
         logger.info(
@@ -331,58 +389,52 @@ def int2numeral_word(value: int, lang: str = "uk", **kwargs) -> Dict[str, Any]:
 
     sub_data = NUMERAL_DATA[lang][NUMERAL_DATA[lang].value == value]
 
+    if sub_data.shape[0] == 0:
+        raise ValueError(f"no data for number {value}")
+
     for label, default in DEFAULT_MORPH.items():
-        value = kwargs.get(label) or default
+        label_value = kwargs.get(label) or default
 
         if label not in NUMERAL_DATA[lang].columns:
             raise ValueError(f'no column "{label}" in data for language "{lang}"')
 
-        if value:
-            if value in sub_data[label].values:
-                sub_data = sub_data[sub_data[label] == value]
+        if label_value:
+            if label_value in sub_data[label].values:
+                sub_data = sub_data[sub_data[label] == label_value]
             elif kwargs.get(label):
                 warnings.warn(
                     f"no data for {label} == {kwargs.get(label)}; ignored", UserWarning
                 )
-
     if sub_data.shape[0] != 1:
-        val_info = f"number {value}" + ", ".join(
-            [
-                f', {label} = "{kwargs.get(label) or default}"'
-                for label, default in DEFAULT_MORPH.items()
-                if (kwargs.get(label) or default)
-            ]
+        val_info = (
+            f"number {value} ("
+            + ", ".join(
+                [
+                    f'{label} = "{kwargs.get(label) or default}"'
+                    for label, default in DEFAULT_MORPH.items()
+                    if (kwargs.get(label) or default)
+                ]
+            )
+            + ")"
         )
 
         if sub_data.shape[0] == 0:
             raise ValueError(f"No data for {val_info}")
 
         if sub_data.shape[0] > 1:
-            values = ", ".join([f"{x}" for x in sub_data.value.values])
-            raise ValueError(f"There are more then one values {val_info}: {values}")
+            raise ValueError(
+                f"There are more then one values for {val_info}:\n" f"{sub_data.head()}"
+            )
 
     numeral_words = [x.strip() for x in sub_data.iloc[0].string.split(" ") if x]
 
     return {
-        "numeral_word": numeral_words[0],
-        "alts": numeral_words[1:],
+        "def_numeral_word": numeral_words[0],
+        "alt_numeral_words": numeral_words[1:],
     }
 
 
-def __process_numbers(numbers: List[Dict[str, Any]]) -> str:
-    s = " ".join(
-        [
-            f"{number['numeral_word']}"
-            + (f" ({', '.join(number['alts'])})" if number["alts"] else "")
-            for number in numbers
-        ]
-    )
-    return s
-
-
 def number_items2numeral(number_items: List[NumberItem], lang: str = "uk", **kwargs):
-    global NUMERAL_DATA, DEFAULT_MORPH
-
     case = kwargs.get("case") or DEFAULT_MORPH["case"]
     num_class = kwargs.get("num_class") or DEFAULT_MORPH["num_class"]
     number = kwargs.get("number") or DEFAULT_MORPH["number"]
@@ -455,3 +507,47 @@ def number_items2numeral(number_items: List[NumberItem], lang: str = "uk", **kwa
         numbers.append(int2numeral_word(number_item.value, case=___case))
 
     return __process_numbers(numbers)
+
+
+def __check_kwargs(kwargs):
+    for label, label_item in kwargs.items():
+        if MORPH_FORMS.get(label) is None:
+            raise ValueError(f"Invalid label; use one of {MORPH_FORMS.keys()}")
+        if label_item and label_item not in MORPH_FORMS[label]:
+            raise ValueError(
+                f"Invalid label {label} value; use one of {MORPH_FORMS[label]}"
+            )
+
+
+def __process_numbers(numbers: List[Dict[str, Any]]) -> Dict[str, Any]:
+
+    numeral = " ".join(
+        [
+            f"{number['def_numeral_word']}"
+            + (
+                f" ({', '.join(number['alt_numeral_words'])})"
+                if number["alt_numeral_words"]
+                else ""
+            )
+            for number in numbers
+        ]
+    )
+
+    numeral_forms = [
+        " ".join(
+            [
+                (
+                    [
+                        numbers[i]["def_numeral_word"],
+                    ]
+                    + numbers[i]["alt_numeral_words"]
+                )[j]
+                for i, j in enumerate(__combinations)
+            ]
+        )
+        for __combinations in combinations(
+            *[range(1 + len(number["alt_numeral_words"])) for number in numbers]
+        )
+    ]
+
+    return {"numeral": numeral, "numeral_forms": numeral_forms}
