@@ -3,8 +3,12 @@ import pytest
 from numeral_converter import numeral2int
 
 
-def test_numeral2int():
+def test_numeral2int_uk():
     assert numeral2int("сто сорок дві тисячи тридцять один", lang="uk") == 142031
+
+
+def test_numeral2int_ru():
+    assert numeral2int("сто сорок две тысячи тридцать один", lang="ru") == 142031
 
 
 def test_numeral2int_scale_of_scales():

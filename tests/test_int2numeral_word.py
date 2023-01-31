@@ -39,4 +39,4 @@ def test_int2numeral_word_converting_in_not_full_morph_form():
 def test_int2numeral_word_number_without_data():
     msg = "no data for number 42"
     with pytest.raises(ValueError, match=msg):
-        int2numeral_word(42)
+        int2numeral_word(42, lang="uk")
