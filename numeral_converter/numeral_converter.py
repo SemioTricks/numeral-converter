@@ -22,12 +22,12 @@ NUMERAL_DATA: Dict[str, pd.DataFrame] = dict()
 logger = logging.getLogger(__name__)
 
 
-def numeral2int(numeral: str, lang: str = "uk") -> Optional[int]:
+def numeral2int(numeral: str, lang: str) -> Optional[int]:
     """
     Converts input numeral in language `lang` into integer value
 
     :param numeral: input numeral in language `lang`
-    :param lang: language; default 'uk'
+    :param lang: language
     :return Optional [int]: integer value or None if nothing found
 
     :Example:
@@ -45,7 +45,7 @@ def numeral2int(numeral: str, lang: str = "uk") -> Optional[int]:
     return value
 
 
-def int2numeral(value: int, lang: str = "uk", **kwargs):
+def int2numeral(value: int, lang: str, **kwargs):
     """
     Converts input integer number into a numeral in language `lang`
     into a morphological form given by the argument-parameters:
@@ -56,7 +56,7 @@ def int2numeral(value: int, lang: str = "uk", **kwargs):
         "number": 'plural' or 'singular'.
 
     :param value: input integer value
-    :param lang: language identifier; default is 'uk'
+    :param lang: language identifier
     :return str: string numeral in language `lang` in a morphological form
             given by the argument-parameters
 
@@ -96,17 +96,17 @@ def get_available_languages() -> List[str]:
 
     >>> from numeral_converter import get_available_languages
     >>> get_available_languages()
-    ['uk', ]
+    ['uk', 'ru', ]
 
     """
     return [x.stem for x in DATA_PATH.glob("*.csv")]
 
 
-def load(lang: str = "uk"):
+def load(lang: str):
     """
     Loads language `lang` data
 
-    :param str lang: language identifier; default is 'uk'
+    :param str lang: language identifier
 
     :Example:
 
@@ -229,6 +229,7 @@ def numeral2number_items(numeral: str, lang: str):
 
 
 def number_items2int(number_items: List[NumberItem]) -> int:
+
     number_items = number_items[::-1]
 
     __value = 0
@@ -377,7 +378,7 @@ def int2number_items(number: int) -> List[NumberItem]:
     return number_items
 
 
-def int2numeral_word(value: int, lang: str = "uk", **kwargs) -> Dict[str, Any]:
+def int2numeral_word(value: int, lang: str, **kwargs) -> Dict[str, Any]:
     __check_kwargs(kwargs)
 
     if NUMERAL_DATA.get(lang) is None:
@@ -434,7 +435,7 @@ def int2numeral_word(value: int, lang: str = "uk", **kwargs) -> Dict[str, Any]:
     }
 
 
-def number_items2numeral(number_items: List[NumberItem], lang: str = "uk", **kwargs):
+def number_items2numeral(number_items: List[NumberItem], lang: str, **kwargs):
     case = kwargs.get("case") or DEFAULT_MORPH["case"]
     num_class = kwargs.get("num_class") or DEFAULT_MORPH["num_class"]
     number = kwargs.get("number") or DEFAULT_MORPH["number"]
@@ -452,15 +453,23 @@ def number_items2numeral(number_items: List[NumberItem], lang: str = "uk", **kwa
         if i == len(number_items) - 1:
 
             __number = number
+            __case = case
             if number_item.scale:
                 __prev_value = number_items[i - 1].value if i > 0 else 1
                 __number = "singular" if __prev_value == 1 else "plural"
+                __case = (
+                    "nominative"
+                    if __prev_value == 1
+                    else "nominative"
+                    if __prev_value in (2, 3, 4)
+                    else "genetive"
+                )
 
             numbers.append(
                 int2numeral_word(
                     number_item.value,
                     lang=lang,
-                    case=case,
+                    case=__case,
                     num_class=num_class,
                     gender=gender,
                     number=__number,
@@ -482,7 +491,9 @@ def number_items2numeral(number_items: List[NumberItem], lang: str = "uk", **kwa
             __gender = "feminine" if number_items[i + 1].value == 1000 else "masculine"
 
             numbers.append(
-                int2numeral_word(number_item.value, case=___case, gender=__gender)
+                int2numeral_word(
+                    number_item.value, lang=lang, case=___case, gender=__gender
+                )
             )
             continue
 
@@ -495,7 +506,9 @@ def number_items2numeral(number_items: List[NumberItem], lang: str = "uk", **kwa
                 ___case = "nominative" if __prev_value in (1, 2, 3, 4) else "genetive"
 
             numbers.append(
-                int2numeral_word(number_item.value, case=___case, number=__number)
+                int2numeral_word(
+                    number_item.value, lang=lang, case=___case, number=__number
+                )
             )
             continue
 
@@ -504,7 +517,7 @@ def number_items2numeral(number_items: List[NumberItem], lang: str = "uk", **kwa
             if __case == "accusative" and i != len(number_items) - 2
             else __case
         )
-        numbers.append(int2numeral_word(number_item.value, case=___case))
+        numbers.append(int2numeral_word(number_item.value, lang=lang, case=___case))
 
     return __process_numbers(numbers)
 
