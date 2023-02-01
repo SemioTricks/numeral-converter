@@ -20,14 +20,22 @@ from numeral_converter import (
     int2numeral
 )
 get_available_languages()
-# ['uk']
+# ['uk', 'ru', 'en']
 
+load('en')
 load('uk')
+load('ru')
+
+numeral2int("two thousand and twenty-three", lang='en'))
+# 2023
 
 numeral2int("дві тисячі двадцять третій", lang="uk")
 # 2023
 
 numeral2int("двох тисяч двадцяти трьох", lang="uk")
+# 2023
+
+numeral2int("двe тысячи двадцать третий", lang="ru")
 # 2023
 
 numeral2int("сто тисяч мільйонів", lang="uk")
