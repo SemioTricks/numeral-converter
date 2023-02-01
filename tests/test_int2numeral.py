@@ -6,6 +6,19 @@ from numeral_converter import int2numeral
 from numeral_converter.numeral_converter import MORPH_FORMS
 
 
+def test_int2numeral():
+    R = int2numeral(2023, lang="uk")
+    assert R["numeral"] == "дві тисячі двадцять три"
+
+    R = int2numeral(2023, lang="ru")
+    assert R["numeral"] == "две тысячи двадцать три"
+
+
+def test_():
+    R = int2numeral(2023, lang="en")
+    assert R["numeral"] == "two thousand twenty-three"
+
+
 def test_int2numeral_invalid_label():
     msg = re.escape(f"Invalid label; use one of {MORPH_FORMS.keys()}")
     with pytest.raises(ValueError, match=msg):

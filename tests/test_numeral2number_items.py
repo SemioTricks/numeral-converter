@@ -44,6 +44,17 @@ def test_numeral2number_items_uk():
     assert R[0].value == 12
     assert R[1].value == 100
 
+    R = numeral2number_items("one hundred forty-two thousand thirty-one", lang="en")
+    assert R[0].value == 1
+    assert R[1].value == 100
+    assert R[1].scale
+    assert R[2].value == 40
+    assert R[3].value == 2
+    assert R[4].value == 1000
+    assert R[4].scale
+    assert R[5].value == 30
+    assert R[6].value == 1
+
 
 def test_numeral2number_items_ru():
 

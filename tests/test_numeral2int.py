@@ -3,17 +3,20 @@ import pytest
 from numeral_converter import numeral2int
 
 
-def test_numeral2int_uk():
+def test_numeral2int():
     assert numeral2int("сто сорок дві тисячи тридцять один", lang="uk") == 142031
-
-
-def test_numeral2int_ru():
     assert numeral2int("сто сорок две тысячи тридцать один", lang="ru") == 142031
+    assert numeral2int("one hundred forty-two thousand thirty-one", lang="en") == 142031
 
 
 def test_numeral2int_scale_of_scales():
     assert numeral2int("сто тисяч мільйонів", lang="uk") == 100000000000
     assert numeral2int("сто тисяч", lang="uk") == 100000
+
+
+def test_numeral2int_scale_of_scales_en():
+    assert numeral2int("one hundred thousand million", lang="en") == 100000000000
+    assert numeral2int("one hundred thousand", lang="en") == 100000
 
 
 def test_numeral2int_scale():
@@ -50,4 +53,8 @@ def test_numeral2int_not_number():
 
 
 def test_numeral2int_spelly():
+    assert numeral2int("дви тисичи двадцить тре", lang="ru") == 2023
+
     assert numeral2int("дви тисичи двадцить тре", lang="uk") == 2023
+
+    assert numeral2int("two thousend twenti tree", lang="en") == 2023

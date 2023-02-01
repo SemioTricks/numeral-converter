@@ -5,29 +5,29 @@ from numeral_converter.numeral_converter import int2numeral_word
 
 def test_int2numeral_word_existing_number_word_with_one_form():
     R = int2numeral_word(12, lang="uk")
-    assert R["def_numeral_word"] == "дванадцять"
-    assert len(R["alt_numeral_words"]) == 0
+    assert R.default == "дванадцять"
+    assert len(R.alt) == 0
 
 
 def test_int2numeral_word_existing_number_word_with_several_forms():
     R = int2numeral_word(7, lang="uk", case="dative")
-    assert len(R["alt_numeral_words"]) == 1
-    assert R["alt_numeral_words"] == [
+    assert len(R.alt) == 1
+    assert R.alt == [
         "сімом",
     ]
 
 
 def test_int2numeral_word_converting_in_different_morph_forms():
     R = int2numeral_word(12, lang="uk", num_class="ordinal", gender="feminine")
-    assert R["def_numeral_word"] == "дванадцята"
+    assert R.default == "дванадцята"
 
     R = int2numeral_word(12, lang="uk", num_class="ordinal", gender="masculine")
-    assert R["def_numeral_word"] == "дванадцятий"
+    assert R.default == "дванадцятий"
 
     R = int2numeral_word(
         12, lang="uk", num_class="ordinal", number="plural", gender="masculine"
     )
-    assert R["def_numeral_word"] == "дванадцяті"
+    assert R.default == "дванадцяті"
 
 
 def test_int2numeral_word_converting_in_not_full_morph_form():
