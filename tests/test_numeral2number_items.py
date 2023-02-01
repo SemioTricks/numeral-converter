@@ -97,6 +97,14 @@ def test_numeral2number_items_ru():
     assert R[0].value == 12
     assert R[1].value == 100
 
+    R = numeral2number_items("nine hundred and ninety-nine thousand", lang="en")
+    assert len(R) == 5
+    assert R[0].value == 9
+    assert R[1].value == 100
+    assert R[2].value == 90
+    assert R[3].value == 9
+    assert R[4].value == 1000
+
 
 def test_numeral2number_items_with_not_number():
     msg = 'can\'t convert "варіант" to integer'
