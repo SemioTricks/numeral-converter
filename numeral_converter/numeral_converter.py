@@ -15,7 +15,7 @@ from .utils import combinations
 NumberItem = namedtuple("NumberItem", "value order scale")
 NumeralWord = namedtuple("NumeralWord", "default alt")
 
-DATA_PATH = Path("/Users/tatiana/PycharmProjects/numeral-converter/data")
+DATA_PATH = Path("")
 
 NUMERAL_TREE: Dict[str, Any] = dict()
 NUMERAL_DATA: Dict[str, pd.DataFrame] = dict()
