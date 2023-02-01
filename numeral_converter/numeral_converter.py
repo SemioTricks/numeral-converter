@@ -1,5 +1,6 @@
 import logging
 import math
+import re
 import warnings
 from collections import namedtuple
 from pathlib import Path
@@ -12,8 +13,9 @@ from .constants import DEFAULT_MORPH, MORPH_FORMS
 from .utils import combinations
 
 NumberItem = namedtuple("NumberItem", "value order scale")
+NumeralWord = namedtuple("NumeralWord", "default alt")
 
-DATA_PATH = Path("")
+DATA_PATH = Path("/Users/tatiana/PycharmProjects/numeral-converter/data")
 
 NUMERAL_TREE: Dict[str, Any] = dict()
 NUMERAL_DATA: Dict[str, pd.DataFrame] = dict()
@@ -96,7 +98,7 @@ def get_available_languages() -> List[str]:
 
     >>> from numeral_converter import get_available_languages
     >>> get_available_languages()
-    ['uk', 'ru', ]
+    ['uk', 'ru', 'en']
 
     """
     return [x.stem for x in DATA_PATH.glob("*.csv")]
@@ -145,7 +147,10 @@ def load(lang: str):
 
         df = pd.read_csv(filename, sep=",")
         df["order"] = df.order.apply(lambda x: int(x) if not pd.isnull(x) else -1)
-        df["value"] = df.apply(lambda row: int(row.value), axis=1)
+        df["value"] = df.apply(
+            lambda row: int(row.value) if not pd.isnull(row.value) else 10**row.order,
+            axis=1,
+        )
         for c in df.columns:
             df[c] = df[c].apply(lambda x: None if pd.isnull(x) else x)
 
@@ -153,14 +158,15 @@ def load(lang: str):
         NUMERAL_TREE[lang] = FuzzyMultiDict(update_value_func=__update_value)
 
         for i, row in df.iterrows():
-
             for string in row["string"].split(" "):
                 if not string:
                     continue
 
                 data = {
                     "morph_forms": {
-                        label: row[label] for label in DEFAULT_MORPH.keys()
+                        label: row[label]
+                        for label in DEFAULT_MORPH.keys()
+                        if row.get(label)
                     },
                     "value": row["value"],
                     "order": row["order"],
@@ -181,6 +187,7 @@ def numeral2number_items(numeral: str, lang: str):
     number_items: List[NumberItem] = list()
 
     __process_first = False
+    numeral = re.sub("-", " ", numeral)
     for number_word in numeral.split(" ")[::-1]:
 
         if not number_word:
@@ -378,7 +385,7 @@ def int2number_items(number: int) -> List[NumberItem]:
     return number_items
 
 
-def int2numeral_word(value: int, lang: str, **kwargs) -> Dict[str, Any]:
+def int2numeral_word(value: int, lang: str, **kwargs) -> NumeralWord:
     __check_kwargs(kwargs)
 
     if NUMERAL_DATA.get(lang) is None:
@@ -395,11 +402,13 @@ def int2numeral_word(value: int, lang: str, **kwargs) -> Dict[str, Any]:
 
     for label, default in DEFAULT_MORPH.items():
         label_value = kwargs.get(label) or default
+        if label_value and label not in NUMERAL_DATA[lang].columns:
+            warnings.warn(
+                f'no column "{label}" in data for language "{lang}"; ignored',
+                UserWarning,
+            )
 
-        if label not in NUMERAL_DATA[lang].columns:
-            raise ValueError(f'no column "{label}" in data for language "{lang}"')
-
-        if label_value:
+        if label_value and label in sub_data.columns:
             if label_value in sub_data[label].values:
                 sub_data = sub_data[sub_data[label] == label_value]
             elif kwargs.get(label):
@@ -429,10 +438,7 @@ def int2numeral_word(value: int, lang: str, **kwargs) -> Dict[str, Any]:
 
     numeral_words = [x.strip() for x in sub_data.iloc[0].string.split(" ") if x]
 
-    return {
-        "def_numeral_word": numeral_words[0],
-        "alt_numeral_words": numeral_words[1:],
-    }
+    return NumeralWord(numeral_words[0], numeral_words[1:])
 
 
 def number_items2numeral(number_items: List[NumberItem], lang: str, **kwargs):
@@ -517,9 +523,11 @@ def number_items2numeral(number_items: List[NumberItem], lang: str, **kwargs):
             if __case == "accusative" and i != len(number_items) - 2
             else __case
         )
-        numbers.append(int2numeral_word(number_item.value, lang=lang, case=___case))
+        numbers.append(
+            int2numeral_word(number_item.value, lang=lang, case=___case),
+        )
 
-    return __process_numbers(numbers)
+    return __process_numbers(numbers, number_items, lang=lang)
 
 
 def __check_kwargs(kwargs):
@@ -532,16 +540,33 @@ def __check_kwargs(kwargs):
             )
 
 
-def __process_numbers(numbers: List[Dict[str, Any]]) -> Dict[str, Any]:
+def __process_numbers(
+    numbers: List[NumeralWord], number_items, lang: str
+) -> Dict[str, Any]:
+
+    if lang == "en":
+        numbers__ = numbers.copy()
+        numbers = list()
+        i = 0
+        while i < len(number_items):
+            if (
+                i + 1 < len(number_items)
+                and number_items[i].order == 1
+                and number_items[i + 1].order == 0
+            ):
+                numbers.append(
+                    NumeralWord(
+                        numbers__[i].default + "-" + numbers__[i + 1].default, []
+                    )
+                )
+                i += 2
+            else:
+                numbers.append(numbers__[i])
+                i += 1
 
     numeral = " ".join(
         [
-            f"{number['def_numeral_word']}"
-            + (
-                f" ({', '.join(number['alt_numeral_words'])})"
-                if number["alt_numeral_words"]
-                else ""
-            )
+            f"{number.default}" + (f" ({', '.join(number.alt)})" if number.alt else "")
             for number in numbers
         ]
     )
@@ -551,15 +576,15 @@ def __process_numbers(numbers: List[Dict[str, Any]]) -> Dict[str, Any]:
             [
                 (
                     [
-                        numbers[i]["def_numeral_word"],
+                        numbers[i].default,
                     ]
-                    + numbers[i]["alt_numeral_words"]
+                    + numbers[i].alt
                 )[j]
                 for i, j in enumerate(__combinations)
             ]
         )
         for __combinations in combinations(
-            *[range(1 + len(number["alt_numeral_words"])) for number in numbers]
+            *[range(1 + len(number.alt)) for number in numbers]
         )
     ]
 
