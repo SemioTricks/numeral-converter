@@ -190,7 +190,7 @@ def numeral2number_items(numeral: str, lang: str):
     numeral = re.sub("-", " ", numeral)
     for number_word in numeral.split(" ")[::-1]:
 
-        if not number_word:
+        if not number_word or (number_word == "and" and lang == "en"):
             continue
 
         number_word_info = NUMERAL_TREE[lang].get(number_word)
