@@ -1,25 +1,25 @@
 import pytest
 
-from numeral_converter import get_available_languages, load
+from numeral_converter import get_available_languages, load_numeral_data
 
 
 def test_load_unknown_lang():
     with pytest.raises(ValueError):
-        load("unknown")
+        load_numeral_data("unknown")
 
 
 def test_load_uk():
-    load("uk")
+    load_numeral_data("uk")
     assert True
 
 
 def test_load_ru():
-    load("ru")
+    load_numeral_data("ru")
     assert True
 
 
 def test_load_en():
-    load("en")
+    load_numeral_data("en")
     assert True
 
 

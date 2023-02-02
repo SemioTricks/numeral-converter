@@ -3,6 +3,11 @@ import pytest
 from numeral_converter import numeral2int
 
 
+def test_empty():
+    with pytest.raises(ValueError):
+        numeral2int("", "uk")
+
+
 def test_numeral2int():
     assert numeral2int("сто сорок дві тисячи тридцять один", lang="uk") == 142031
     assert numeral2int("сто сорок две тысячи тридцать один", lang="ru") == 142031
@@ -13,6 +18,13 @@ def test_numeral2int():
     )
     assert (numeral2int("nine hundred and ninety-nine thousand", lang="en")) == 999000
     assert (numeral2int("two thousand and twenty-three", lang="en")) == 2023
+
+
+def test_numeral2int_unprocessed():
+    assert (
+        numeral2int("сто     сорок \t\tдві тисячи\tтридцять    один  ", lang="uk")
+        == 142031
+    )
 
 
 def test_numeral2int_scale_of_scales():
@@ -47,7 +59,7 @@ def test_numeral2int_invalid_numeral():
 
 
 def test_numeral2int_spelling_invalid_numeral():
-    msg = "the number in the middle of the numeral cannot be ordinal"
+    msg = r'ordinal numeral word "[^"]+" inside numeral'
     with pytest.raises(ValueError, match=msg):
         numeral2int("три мільярди тисячний пятдесят пятий мільон", lang="uk")
 
@@ -64,3 +76,10 @@ def test_numeral2int_spelly():
     assert numeral2int("дви тисичи двадцить тре", lang="uk") == 2023
 
     assert numeral2int("two thousend twenti tree", lang="en") == 2023
+
+
+def test_numeral2int_invalid_order():
+    with pytest.raises(ValueError):
+        numeral2int("двадцять дванадцять", lang="uk")
+    with pytest.raises(ValueError):
+        print(numeral2int("дванадцять два", lang="uk"))

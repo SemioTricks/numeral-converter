@@ -2351,3 +2351,13 @@ def test_int2numeral_numbers_morph_forms():
         ]
         == "дев’яноста дев’яти (дев’ятьох)"
     )
+
+
+def test__():
+    print(int2numeral(42, lang="uk", case="nominative", num_class="quantitative"))
+    print(int2numeral(42, lang="uk", case="genetive", num_class="quantitative"))
+    print(
+        int2numeral(
+            42, lang="uk", case="dative", num_class="ordinal", gender="feminine"
+        )
+    )
