@@ -139,144 +139,73 @@ def number_items2int(number_items: List[NumberItem]) -> int:
     int_value = 0
     number_items = number_items[::-1]
 
-    i = __scale_group_start = __scale_order = 0
+    i_number = num_block_start = 0
+    num_block_order = 0
+
     if number_items[0].scale is not None:
-        i = __scale_group_start = 1
-        __scale_order = number_items[0].order
+        i_number = num_block_start = 1
+        num_block_order = number_items[0].order
 
-    while i < len(number_items):
+    while i_number < len(number_items):
+        i_number, inner_order = __search_block(number_items, i_number, num_block_order)
+        __check_correct_order(number_items, num_block_start, i_number, inner_order)
+        __value = (
+            number_items2int(number_items[num_block_start:i_number][::-1])
+            if inner_order
+            else max(sum([x.value for x in number_items[num_block_start:i_number]]), 1)
+        )
+        int_value += (10**num_block_order) * __value
 
-        __scale_order_found = None
-
-        while (
-            i < len(number_items)
-            and (__scale_order > 0 or number_items[i].order < 3)
-            and (number_items[i].scale is None or number_items[i].order < __scale_order)
-        ):
-            if number_items[i].scale and (
-                __scale_order_found is None
-                or __scale_order_found < number_items[i].order
-            ):
-                __scale_order_found = number_items[i].order
-
-            i += 1
-
-        if __scale_order_found:
-
-            for k in range(__scale_group_start + 1, i):
-                __order = (
-                    0
-                    if number_items[k].value % 10 ** number_items[k].order
-                    else number_items[k].order
-                )
-                if number_items[k - 1].order == __order:
-                    raise ValueError(
-                        f"position {len(number_items) - k}: {number_items[k - 1].value}"
-                        f" with order {number_items[k - 1].order} stands after "
-                        f"{number_items[k].value} with equal order {__order}"
-                    )
-
-            int_value += (10**__scale_order) * number_items2int(
-                number_items[__scale_group_start:i][::-1]
-            )
-        else:
-            for k in range(__scale_group_start + 1, i):
-                __order = (
-                    0
-                    if number_items[k].value % 10 ** number_items[k].order
-                    else number_items[k].order
-                )
-                if number_items[k - 1].order >= __order:
-                    raise ValueError(
-                        f"position {len(number_items) - k}: {number_items[k - 1].value}"
-                        f" with order {number_items[k - 1].order} stands after "
-                        f"{number_items[k].value} with less/equal order {__order}"
-                    )
-
-            __n = sum([x.value for x in number_items[__scale_group_start:i]])
-            __n = (10**__scale_order) * __n if __n else 10**__scale_order
-            int_value += __n
-
-            __scale_group_start = None
-
-        if i >= len(number_items):
+        if i_number >= len(number_items):
             return int_value
 
-        if not number_items[i].scale:
-            raise ValueError(
-                f"position {len(number_items) - 1 - i}: expects 10^(3n) or 100; "
-                f"found {number_items[i].value}"
-            )
+        __check_number_is_correct_scale(number_items, i_number, int_value)
+        num_block_order = number_items[i_number].order
+        num_block_start = i_number + 1
+        i_number += 1
 
-        __value_order = int(math.log10(int_value))
-        if number_items[i].order <= __value_order:
-            raise ValueError(
-                f"position {len(number_items) - 1 - i}: order of "
-                f"{number_items[i].value}:{number_items[i].order} "
-                f"is less/equal of summary order in next group: {__value_order}"
-            )
-
-        __scale_order = number_items[i].order
-
-        __scale_group_start = i + 1
-
-        i += 1
-
-    if __scale_group_start is not None:
-        int_value += 10**__scale_order
+    if num_block_start is not None:
+        int_value += 10**num_block_order
 
     return int_value
 
 
 def int2number_items(number: int) -> List[NumberItem]:
     number_items: List[NumberItem] = list()
+    current_order, ones = 0, None
 
-    __order = 0
-    __ones = None
-
-    __number = number
-
-    while __number:
-
-        digit = __number % 10
-
-        if __order % 3 == 2:
-
-            value = 100 * digit
-            if value:
-                number_items.insert(0, NumberItem(value, __order % 3, None))
-
-        elif __order % 3 == 0:
-
-            if __order > 0:
-                number_items.insert(0, NumberItem(10**__order, __order, True))
-
-            __ones = digit
-
+    while number:
+        digit = number % 10
+        if current_order % 3 == 2 and digit:
+            number_items.insert(0, NumberItem(100 * digit, current_order % 3, None))
+        elif current_order % 3 == 0:
+            ones = digit
+            if current_order > 0:
+                number_items.insert(
+                    0, NumberItem(10**current_order, current_order, True)
+                )
         else:
-
-            if digit == 1 and __ones > 0:
-
-                value = 10 * digit + __ones
+            if digit == 1 and ones > 0:
+                value = 10 * digit + ones
                 if value:
-                    number_items.insert(0, NumberItem(value, __order % 3, None))
+                    number_items.insert(0, NumberItem(value, current_order % 3, None))
             else:
+                if ones:
+                    number_items.insert(0, NumberItem(ones, 0, None))
+                if digit:
+                    number_items.insert(
+                        0, NumberItem(10 * digit, current_order % 3, None)
+                    )
+            ones = None
 
-                value = __ones
-                if value:
-                    number_items.insert(0, NumberItem(value, 0, None))
+        current_order += 1
+        number = number // 10
 
-                value = 10 * digit
-                if value:
-                    number_items.insert(0, NumberItem(value, __order % 3, None))
+    if ones:
+        number_items.insert(0, NumberItem(ones, 0, None))
 
-            __ones = None
-
-        __order += 1
-        __number = __number // 10
-
-    if __ones:
-        number_items.insert(0, NumberItem(__ones, 0, None))
+    if number_items[0].scale is not None:
+        number_items.insert(0, NumberItem(1, 0, None))
 
     return number_items
 
@@ -306,21 +235,9 @@ def int2numeral_word(value: int, lang: str, **kwargs) -> NumeralWord:
                     f"no data for {label} == {kwargs.get(label)}; ignored", UserWarning
                 )
     if sub_data.shape[0] != 1:
-        val_info = (
-            f"number {value} ("
-            + ", ".join(
-                [
-                    f'{label} = "{kwargs.get(label) or default}"'
-                    for label, default in DEFAULT_MORPH.items()
-                    if (kwargs.get(label) or default)
-                ]
-            )
-            + ")"
-        )
-
+        val_info = __kwargs2str(value=value, kwargs=kwargs)
         if sub_data.shape[0] == 0:
             raise ValueError(f"No data for {val_info}")
-
         if sub_data.shape[0] > 1:
             raise ValueError(
                 f"There are more then one values for {val_info}:\n" f"{sub_data.head()}"
@@ -374,9 +291,7 @@ def number_items2numeral(number_items: List[NumberItem], lang: str, **kwargs):
 
             continue
 
-        __case = case
-        if num_class == "ordinal":
-            __case = "nominative"
+        __case = "nominative" if num_class == "ordinal" else case
 
         if (
             (0 < number_item.value < 10)
@@ -511,3 +426,70 @@ def __delete_ordinal_from_numeral_word_info(
             ]
         )
     ]
+
+
+def __check_correct_order(
+    number_items: List[NumberItem], start: int, end: int, inner_order: Optional[int]
+):
+
+    for k in range(start + 1, end):
+        __order = (
+            0
+            if number_items[k].value % 10 ** number_items[k].order
+            else number_items[k].order
+        )
+
+        if not inner_order and number_items[k - 1].order >= __order:
+            raise ValueError(
+                f"position {len(number_items) - k}: {number_items[k - 1].value}"
+                f" with order {number_items[k - 1].order} stands after "
+                f"{number_items[k].value} with less/equal order {__order}"
+            )
+
+        if inner_order and number_items[k - 1].order == __order:
+            raise ValueError(
+                f"position {len(number_items) - k}: {number_items[k - 1].value}"
+                f" with order {number_items[k - 1].order} stands after "
+                f"{number_items[k].value} with equal order {__order}"
+            )
+
+
+def __search_block(number_items, start, num_block_order):
+    inner_order = None
+    while start < len(number_items) and (
+        number_items[start].scale is None or number_items[start].order < num_block_order
+    ):
+        if number_items[start].scale and (
+            inner_order is None or inner_order < number_items[start].order
+        ):
+            inner_order = number_items[start].order
+        start += 1
+    return start, inner_order
+
+
+def __check_number_is_correct_scale(number_items, i_number, int_value):
+
+    if not number_items[i_number].scale:
+        raise ValueError(
+            f"position {len(number_items) - 1 - i_number}: expects 10^(3n) or 100; "
+            f"found {number_items[i_number].value}"
+        )
+
+    value_order = int(math.log10(int_value))
+    if number_items[i_number].order <= value_order:
+        raise ValueError(
+            f"position {len(number_items) - 1 - i_number}: order of "
+            f"{number_items[i_number].value}:{number_items[i_number].order} "
+            f"is less/equal of summary order in next group: {value_order}"
+        )
+
+
+def __kwargs2str(value, kwargs):
+    labels_string = ", ".join(
+        [
+            f'{label} = "{kwargs.get(label) or default}"'
+            for label, default in DEFAULT_MORPH.items()
+            if (kwargs.get(label) or default)
+        ]
+    )
+    return f"number {value} ({labels_string})"
