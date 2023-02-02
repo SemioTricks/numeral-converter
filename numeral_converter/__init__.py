@@ -1,2 +1,3 @@
 __version__ = "0.0.1"
-from .numeral_converter import get_available_languages, int2numeral, load, numeral2int
+from .lang_data_loader import get_available_languages, load_numeral_data
+from .numeral_converter import int2numeral, numeral2int

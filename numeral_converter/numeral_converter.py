@@ -3,22 +3,14 @@ import math
 import re
 import warnings
 from collections import namedtuple
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import pandas as pd
-from fuzzy_multi_dict import FuzzyMultiDict
-
 from .constants import DEFAULT_MORPH, MORPH_FORMS
+from .lang_data_loader import NUMERAL_DATA, NUMERAL_TREE, check_numeral_data_load
 from .utils import combinations
 
 NumberItem = namedtuple("NumberItem", "value order scale")
 NumeralWord = namedtuple("NumeralWord", "default alt")
-
-DATA_PATH = Path("")
-
-NUMERAL_TREE: Dict[str, Any] = dict()
-NUMERAL_DATA: Dict[str, pd.DataFrame] = dict()
 
 
 logger = logging.getLogger(__name__)
@@ -34,16 +26,32 @@ def numeral2int(numeral: str, lang: str) -> Optional[int]:
 
     :Example:
 
-    >>> from numeral_converter import load, numeral2int
-    >>> load("uk")
-    >>> numeral2int("дві тисячі двадцять третій", lang="uk")
-    2023
+    >>> from numeral_converter import load_numeral_data, numeral2int
+
+    >>> load_numeral_data("uk")
+    >>> numeral2int("сорок два", lang="uk")
+    42
+
+    >>> # different morph forms
+    >>> numeral2int("сорок другий", lang="uk")
+    42
+
+    >>> # spell checking
+    >>> numeral2int("сороак двоіх", lang="uk")
+    42
+
+    # another languages
+    >>> load_numeral_data("ru")
+    >>> numeral2int("сорок второй", lang="uk")
+    42
+
+    >>> load_numeral_data("en")
+    >>> numeral2int("forty two", lang="uk")
+    42
 
     """
     number_items = numeral2number_items(numeral=numeral, lang=lang)
-
     value = number_items2int(number_items=number_items)
-
     return value
 
 
@@ -64,13 +72,24 @@ def int2numeral(value: int, lang: str, **kwargs):
 
     :Example:
 
-    >>> from numeral_converter import load, int2numeral
-    >>> load("uk")
-    >>> int2numeral(2023, case="nominative", num_class="quantitative")
+    >>> from numeral_converter import load_numeral_data, int2numeral
+    >>> load_numeral_data("uk")
+
+    >>> int2numeral(42, case="nominative", num_class="quantitative")
     {
-        'numeral': 'дві тисячі двадцять три',
-        'numeral_forms': ['дві тисячі двадцять три', ]
+        'numeral': 'сорок два',
+        'numeral_forms': ['сорок два', ]
     }
+
+    >>> int2numeral(42, lang='uk', case="nominative", num_class="quantitative")
+    {'numeral': 'сорок два', 'numeral_forms': ['сорок два']}
+
+    >>> int2numeral(42, lang='uk', case="genetive", num_class="quantitative")
+    {'numeral': 'сорока двох', 'numeral_forms': ['сорока двох']}
+
+    >>> int2numeral(
+    ...     42, lang='uk', case="dative", num_class="ordinal", gender='feminine')
+    {'numeral': 'сорок другій', 'numeral_forms': ['сорок другій']}
 
     """
     __check_kwargs(kwargs)
@@ -88,147 +107,28 @@ def int2numeral(value: int, lang: str, **kwargs):
     return numeral
 
 
-def get_available_languages() -> List[str]:
-    """
-    Check available languages
-
-    :return List[str]: list of available languages identifier
-
-    :Example:
-
-    >>> from numeral_converter import get_available_languages
-    >>> get_available_languages()
-    ['uk', 'ru', 'en']
-
-    """
-    return [x.stem for x in DATA_PATH.glob("*.csv")]
-
-
-def load(lang: str):
-    """
-    Loads language `lang` data
-
-    :param str lang: language identifier
-
-    :Example:
-
-    >>> from numeral_converter import load
-    >>> load('uk')
-
-    """
-
-    def __update_value(x, y):
-        if x is None:
-            return y
-
-        if not isinstance(x, dict) or not isinstance(y, dict):
-            raise TypeError(
-                f"Invalid value type; expect dict; got {type(x)} and {type(y)}"
-            )
-
-        for k, v in y.items():
-            if x.get(k) is None:
-                x[k] = v
-            elif isinstance(x[k], list):
-                x[k].append(v)
-            elif x[k] != v:
-                x[k] = [x[k], v]
-
-        return x
-
-    if NUMERAL_TREE.get(lang) is None and NUMERAL_DATA.get(lang) is None:
-        __available_languages = get_available_languages()
-        if lang not in __available_languages:
-            raise ValueError(
-                f"no data for language {lang}; "
-                f"use one of the available languages: {__available_languages}"
-            )
-        filename = DATA_PATH / f"{lang}.csv"
-
-        df = pd.read_csv(filename, sep=",")
-        df["order"] = df.order.apply(lambda x: int(x) if not pd.isnull(x) else -1)
-        df["value"] = df.apply(
-            lambda row: int(row.value) if not pd.isnull(row.value) else 10**row.order,
-            axis=1,
-        )
-        for c in df.columns:
-            df[c] = df[c].apply(lambda x: None if pd.isnull(x) else x)
-
-        NUMERAL_DATA[lang] = df
-        NUMERAL_TREE[lang] = FuzzyMultiDict(update_value_func=__update_value)
-
-        for i, row in df.iterrows():
-            for string in row["string"].split(" "):
-                if not string:
-                    continue
-
-                data = {
-                    "morph_forms": {
-                        label: row[label]
-                        for label in DEFAULT_MORPH.keys()
-                        if row.get(label)
-                    },
-                    "value": row["value"],
-                    "order": row["order"],
-                    "scale": row["scale"],
-                }
-
-                NUMERAL_TREE[lang][string] = data
-
-
 def numeral2number_items(numeral: str, lang: str):
-    if NUMERAL_TREE.get(lang) is None:
-        logger.info(
-            f'data for language "{lang}" is not loaded;'
-            f'starts searching for data for language "{lang}"'
-        )
-        load(lang)
+    check_numeral_data_load(lang)
+    numeral = __preprocess_numeral(numeral, lang)
 
     number_items: List[NumberItem] = list()
 
-    __process_first = False
-    numeral = re.sub("-", " ", numeral)
-    for number_word in numeral.split(" ")[::-1]:
-
-        if not number_word or (number_word == "and" and lang == "en"):
-            continue
-
+    for i, number_word in enumerate(numeral.split(" ")[::-1]):
         number_word_info = NUMERAL_TREE[lang].get(number_word)
-        if __process_first:
-            number_word_info__ = [
-                item
-                for item in number_word_info
-                if (
-                    not isinstance(item["value"]["morph_forms"], list)
-                    and item["value"]["morph_forms"].get("num_class") != "ordinal"
-                )
-                or all(
-                    [
-                        (v.get("num_class") is None or v.get("num_class") != "ordinal")
-                        for v in item["value"]["morph_forms"]
-                    ]
-                )
-            ]
-            if len(number_word_info) and not len(number_word_info__):
-                raise ValueError(
-                    "the number in the middle of the numeral cannot be ordinal"
-                )
-            else:
-                number_word_info = number_word_info__
-        else:
-            __process_first = True
-
         if not len(number_word_info):
             raise ValueError(f'can\'t convert "{number_word}" to integer')
 
-        number_word_data = number_word_info[0]["value"]
+        if i > 0:
+            number_word_info = __delete_ordinal_from_numeral_word_info(number_word_info)
+            if not len(number_word_info):
+                raise ValueError(f'ordinal numeral word "{number_word}" inside numeral')
 
         number_items.insert(
             0,
             NumberItem(
-                value=number_word_data["value"],
-                order=number_word_data["order"],
-                scale=number_word_data["scale"],
+                value=number_word_info[0]["value"]["value"],
+                order=number_word_info[0]["value"]["order"],
+                scale=number_word_info[0]["value"]["scale"],
             ),
         )
 
@@ -236,15 +136,11 @@ def numeral2number_items(numeral: str, lang: str):
 
 
 def number_items2int(number_items: List[NumberItem]) -> int:
-
+    int_value = 0
     number_items = number_items[::-1]
 
-    __value = 0
-
-    if number_items[0].scale is None:
-        i = __scale_group_start = 0
-        __scale_order = 0
-    else:
+    i = __scale_group_start = __scale_order = 0
+    if number_items[0].scale is not None:
         i = __scale_group_start = 1
         __scale_order = number_items[0].order
 
@@ -280,7 +176,7 @@ def number_items2int(number_items: List[NumberItem]) -> int:
                         f"{number_items[k].value} with equal order {__order}"
                     )
 
-            __value += (10**__scale_order) * number_items2int(
+            int_value += (10**__scale_order) * number_items2int(
                 number_items[__scale_group_start:i][::-1]
             )
         else:
@@ -299,12 +195,12 @@ def number_items2int(number_items: List[NumberItem]) -> int:
 
             __n = sum([x.value for x in number_items[__scale_group_start:i]])
             __n = (10**__scale_order) * __n if __n else 10**__scale_order
-            __value += __n
+            int_value += __n
 
             __scale_group_start = None
 
         if i >= len(number_items):
-            return __value
+            return int_value
 
         if not number_items[i].scale:
             raise ValueError(
@@ -312,7 +208,7 @@ def number_items2int(number_items: List[NumberItem]) -> int:
                 f"found {number_items[i].value}"
             )
 
-        __value_order = int(math.log10(__value))
+        __value_order = int(math.log10(int_value))
         if number_items[i].order <= __value_order:
             raise ValueError(
                 f"position {len(number_items) - 1 - i}: order of "
@@ -327,9 +223,9 @@ def number_items2int(number_items: List[NumberItem]) -> int:
         i += 1
 
     if __scale_group_start is not None:
-        __value += 10**__scale_order
+        int_value += 10**__scale_order
 
-    return __value
+    return int_value
 
 
 def int2number_items(number: int) -> List[NumberItem]:
@@ -387,13 +283,7 @@ def int2number_items(number: int) -> List[NumberItem]:
 
 def int2numeral_word(value: int, lang: str, **kwargs) -> NumeralWord:
     __check_kwargs(kwargs)
-
-    if NUMERAL_DATA.get(lang) is None:
-        logger.info(
-            f'data for language "{lang}" is not loaded;'
-            f'starts searching for data for language "{lang}"'
-        )
-        load(lang)
+    check_numeral_data_load(lang)
 
     sub_data = NUMERAL_DATA[lang][NUMERAL_DATA[lang].value == value]
 
@@ -589,3 +479,35 @@ def __process_numbers(
     ]
 
     return {"numeral": numeral, "numeral_forms": numeral_forms}
+
+
+def __preprocess_numeral(numeral: str, lang: str) -> str:
+
+    if lang == "en":
+        numeral = re.sub(r"-", " ", numeral)
+        numeral = re.sub(r"\sand\s", " ", numeral)
+
+    numeral = re.sub(r"\s+", " ", numeral).strip()
+
+    numeral = numeral.lower()
+
+    return numeral
+
+
+def __delete_ordinal_from_numeral_word_info(
+    number_word_info: List[Dict[str, Any]]
+) -> List[Dict[str, Any]]:
+    return [
+        item
+        for item in number_word_info
+        if (
+            not isinstance(item["value"]["morph_forms"], list)
+            and item["value"]["morph_forms"].get("num_class") != "ordinal"
+        )
+        or all(
+            [
+                (v.get("num_class") is None or v.get("num_class") != "ordinal")
+                for v in item["value"]["morph_forms"]
+            ]
+        )
+    ]
