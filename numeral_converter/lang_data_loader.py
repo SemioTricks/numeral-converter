@@ -4,11 +4,10 @@ from typing import Any, Dict, List
 
 import pandas as pd
 from fuzzy_multi_dict import FuzzyMultiDict
-
+import semiotic_tricks_data_loader as stdl
 from .constants import DEFAULT_MORPH
 
-DATA_PATH = Path("/Users/tatiana/PycharmProjects/numeral-converter/data")
-
+__NAME_ENV_STDL = 'numeral_converter'
 NUMERAL_TREE: Dict[str, Any] = dict()
 NUMERAL_DATA: Dict[str, pd.DataFrame] = dict()
 
@@ -26,7 +25,11 @@ def get_available_languages() -> List[str]:
     ['uk', 'ru', 'en']
 
     """
-    return [x.stem for x in DATA_PATH.glob("*.csv")]
+    files, _ = stdl.DataLoader().get_paths([__NAME_ENV_STDL])
+
+    return [
+        file.split('.')[0] for file in files
+    ]
 
 
 def load_numeral_data(lang: str):
@@ -51,7 +54,7 @@ def load_numeral_data(lang: str):
             f"use one of the available languages: {get_available_languages()}"
         )
 
-    filename = DATA_PATH / f"{lang}.csv"
+    filename = stdl.DataLoader().load_file([__NAME_ENV_STDL, f"{lang}.csv"])
 
     NUMERAL_DATA[lang] = __read_language_data(filename)
     NUMERAL_TREE[lang] = __build_numeral_tree(NUMERAL_DATA[lang])
@@ -71,7 +74,7 @@ def __read_language_data(filename: Path) -> pd.DataFrame:
     df = pd.read_csv(filename, sep=",")
     df["order"] = df.order.apply(lambda x: int(x) if not pd.isnull(x) else -1)
     df["value"] = df.apply(
-        lambda row: int(row.value) if not pd.isnull(row.value) else 10**row.order,
+        lambda row: int(row.value) if not pd.isnull(row.value) else 10 ** row.order,
         axis=1,
     )
     for c in df.columns:
