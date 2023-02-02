@@ -13,10 +13,11 @@ def test_int2numeral():
     R = int2numeral(2023, lang="ru")
     assert R["numeral"] == "две тысячи двадцать три"
 
-
-def test_():
     R = int2numeral(2023, lang="en")
     assert R["numeral"] == "two thousand twenty-three"
+
+    R = int2numeral(1000, lang="en")
+    assert R["numeral"] == "one thousand"
 
 
 def test_int2numeral_invalid_label():
@@ -2350,14 +2351,4 @@ def test_int2numeral_numbers_morph_forms():
             "numeral"
         ]
         == "дев’яноста дев’яти (дев’ятьох)"
-    )
-
-
-def test__():
-    print(int2numeral(42, lang="uk", case="nominative", num_class="quantitative"))
-    print(int2numeral(42, lang="uk", case="genetive", num_class="quantitative"))
-    print(
-        int2numeral(
-            42, lang="uk", case="dative", num_class="ordinal", gender="feminine"
-        )
     )
