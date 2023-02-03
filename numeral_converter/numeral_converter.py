@@ -254,99 +254,26 @@ def int2numeral_word(value: int, lang: str, **kwargs) -> NumeralWord:
     return NumeralWord(numeral_words[0], numeral_words[1:])
 
 
-def __define_morph_number(
-    global_number: str, number_items: List[NumberItem], i: int
-) -> str:
-    number = global_number
-
-    prev_value = number_items[i - 1].value if i > 0 else 1
-
-    if number_items[i].scale:
-        number = "singular" if prev_value == 1 else "plural"
-
-    return number
-
-
-def __define_morph_case(global_case, number_items, i, global_num_class):
-    case = global_case
-    prev_value = number_items[i - 1].value if i > 0 else 1
-
-    if i == len(number_items) - 1:
-        if number_items[i].scale:
-
-            case = (
-                "nominative"
-                if prev_value == 1
-                else "nominative"
-                if prev_value in (2, 3, 4)
-                else "genetive"
-            )
-
-        return case
-
-    if global_num_class == "ordinal":
-        case = "nominative"
-
-    if (
-        (0 < number_items[i].value < 10)
-        and (i + 1 < len(number_items))
-        and number_items[i + 1].scale
-    ):
-        if case == "accusative":
-            case = "nominative"
-        return case
-
-    if number_items[i].scale:
-        if case in ("nominative", "accusative"):
-            case = "nominative" if prev_value in (1, 2, 3, 4) else "genetive"
-            return case
-
-    if case == "accusative" and i != len(number_items) - 2:
-        case = "nominative"
-
-    return case
-
-
-def __define_morph_gender(number_items, i):
-    return "feminine" if number_items[i + 1].value == 1000 else "masculine"
-
-
 def number_items2numeral(number_items: List[NumberItem], lang: str, **kwargs):
 
-    global_morph_forms = {
-        label: kwargs.get(label) or value for label, value in DEFAULT_MORPH.items()
-    }
+    mf = {label: kwargs.get(label) or value for label, value in DEFAULT_MORPH.items()}
+    if mf["num_class"] == "collective" and len(number_items) > 1:
+        warnings.warn("Can't convert to collective numeral number; cardinal used")
+        mf["num_class"] = "cardinal"
 
     numbers = list()
-
-    if global_morph_forms["num_class"] == "collective" and len(number_items) > 1:
-        warnings.warn(
-            "Can't convert to collective numeral number "
-            "with more than 1 components; cardinal used"
-        )
-        global_morph_forms["num_class"] = "cardinal"
-
     for i, number_item in enumerate(number_items):
         if i == len(number_items) - 1:
-            case = __define_morph_case(
-                global_case=global_morph_forms["case"],
-                number_items=number_items,
-                i=i,
-                global_num_class=global_morph_forms["num_class"],
-            )
-            number = __define_morph_number(
-                global_number=global_morph_forms["number"],
-                number_items=number_items,
-                i=i,
-            )
+            case = __define_morph_case(mf["case"], number_items, i, mf["num_class"])
+            number = __define_morph_number(mf["number"], number_items, i)
             numbers.append(
                 int2numeral_word(
                     number_item.value,
                     lang=lang,
                     case=case,
                     number=number,
-                    num_class=global_morph_forms["num_class"],
-                    gender=global_morph_forms["gender"],
+                    num_class=mf["num_class"],
+                    gender=mf["gender"],
                 )
             )
             continue
@@ -356,44 +283,23 @@ def number_items2numeral(number_items: List[NumberItem], lang: str, **kwargs):
             and (i + 1 < len(number_items))
             and number_items[i + 1].scale
         ):
-
             gender = __define_morph_gender(number_items, i)
+            case = __define_morph_case(mf["case"], number_items, i, mf["num_class"])
             numbers.append(
-                int2numeral_word(
-                    number_item.value,
-                    lang=lang,
-                    case=__define_morph_case(
-                        global_morph_forms["case"],
-                        number_items,
-                        i,
-                        global_morph_forms["num_class"],
-                    ),
-                    gender=gender,
-                )
+                int2numeral_word(number_item.value, lang=lang, case=case, gender=gender)
             )
             continue
 
         if number_item.scale:
-            case = __define_morph_case(
-                global_morph_forms["case"],
-                number_items,
-                i,
-                global_morph_forms["num_class"],
-            )
-            number = __define_morph_number(
-                global_morph_forms["number"], number_items, i
-            )
+            case = __define_morph_case(mf["case"], number_items, i, mf["num_class"])
+            number = __define_morph_number(mf["number"], number_items, i)
             numbers.append(
                 int2numeral_word(number_item.value, lang=lang, case=case, number=number)
             )
             continue
 
-        case = __define_morph_case(
-            global_morph_forms["case"], number_items, i, global_morph_forms["num_class"]
-        )
-        numbers.append(
-            int2numeral_word(number_item.value, lang=lang, case=case),
-        )
+        case = __define_morph_case(mf["case"], number_items, i, mf["num_class"])
+        numbers.append(int2numeral_word(number_item.value, lang=lang, case=case))
 
     return __process_numbers(numbers, number_items, lang=lang)
 
@@ -557,3 +463,60 @@ def __kwargs2str(value, kwargs):
         ]
     )
     return f"number {value} ({labels_string})"
+
+
+def __define_morph_number(
+    global_number: str, number_items: List[NumberItem], i: int
+) -> str:
+    number = global_number
+
+    prev_value = number_items[i - 1].value if i > 0 else 1
+
+    if number_items[i].scale:
+        number = "singular" if prev_value == 1 else "plural"
+
+    return number
+
+
+def __define_morph_case(global_case, number_items, i, global_num_class):
+    case = global_case
+    prev_value = number_items[i - 1].value if i > 0 else 1
+
+    if i == len(number_items) - 1:
+        if number_items[i].scale:
+
+            case = (
+                "nominative"
+                if prev_value == 1
+                else "nominative"
+                if prev_value in (2, 3, 4)
+                else "genetive"
+            )
+
+        return case
+
+    if global_num_class == "ordinal":
+        case = "nominative"
+
+    if (
+        (0 < number_items[i].value < 10)
+        and (i + 1 < len(number_items))
+        and number_items[i + 1].scale
+    ):
+        if case == "accusative":
+            case = "nominative"
+        return case
+
+    if number_items[i].scale:
+        if case in ("nominative", "accusative"):
+            case = "nominative" if prev_value in (1, 2, 3, 4) else "genetive"
+            return case
+
+    if case == "accusative" and i != len(number_items) - 2:
+        case = "nominative"
+
+    return case
+
+
+def __define_morph_gender(number_items, i):
+    return "feminine" if number_items[i + 1].value == 1000 else "masculine"
