@@ -307,6 +307,10 @@ def __define_morph_case(global_case, number_items, i, global_num_class):
     return case
 
 
+def __define_morph_gender(number_items, i):
+    return "feminine" if number_items[i + 1].value == 1000 else "masculine"
+
+
 def number_items2numeral(number_items: List[NumberItem], lang: str, **kwargs):
 
     global_morph_forms = {
@@ -316,31 +320,35 @@ def number_items2numeral(number_items: List[NumberItem], lang: str, **kwargs):
     numbers = list()
 
     if global_morph_forms["num_class"] == "collective" and len(number_items) > 1:
-        # todo warn
+        warnings.warn(
+            "Can't convert to collective numeral number "
+            "with more than 1 components; cardinal used"
+        )
         global_morph_forms["num_class"] = "cardinal"
 
     for i, number_item in enumerate(number_items):
-
         if i == len(number_items) - 1:
-
+            case = __define_morph_case(
+                global_case=global_morph_forms["case"],
+                number_items=number_items,
+                i=i,
+                global_num_class=global_morph_forms["num_class"],
+            )
+            number = __define_morph_number(
+                global_number=global_morph_forms["number"],
+                number_items=number_items,
+                i=i,
+            )
             numbers.append(
                 int2numeral_word(
                     number_item.value,
                     lang=lang,
-                    case=__define_morph_case(
-                        global_morph_forms["case"],
-                        number_items,
-                        i,
-                        global_morph_forms["num_class"],
-                    ),
+                    case=case,
+                    number=number,
                     num_class=global_morph_forms["num_class"],
                     gender=global_morph_forms["gender"],
-                    number=__define_morph_number(
-                        global_morph_forms["number"], number_items, i
-                    ),
                 )
             )
-
             continue
 
         if (
@@ -348,8 +356,8 @@ def number_items2numeral(number_items: List[NumberItem], lang: str, **kwargs):
             and (i + 1 < len(number_items))
             and number_items[i + 1].scale
         ):
-            __gender = "feminine" if number_items[i + 1].value == 1000 else "masculine"
 
+            gender = __define_morph_gender(number_items, i)
             numbers.append(
                 int2numeral_word(
                     number_item.value,
@@ -360,41 +368,31 @@ def number_items2numeral(number_items: List[NumberItem], lang: str, **kwargs):
                         i,
                         global_morph_forms["num_class"],
                     ),
-                    gender=__gender,
+                    gender=gender,
                 )
             )
             continue
 
         if number_item.scale:
-
+            case = __define_morph_case(
+                global_morph_forms["case"],
+                number_items,
+                i,
+                global_morph_forms["num_class"],
+            )
+            number = __define_morph_number(
+                global_morph_forms["number"], number_items, i
+            )
             numbers.append(
-                int2numeral_word(
-                    number_item.value,
-                    lang=lang,
-                    case=__define_morph_case(
-                        global_morph_forms["case"],
-                        number_items,
-                        i,
-                        global_morph_forms["num_class"],
-                    ),
-                    number=__define_morph_number(
-                        global_morph_forms["number"], number_items, i
-                    ),
-                )
+                int2numeral_word(number_item.value, lang=lang, case=case, number=number)
             )
             continue
 
+        case = __define_morph_case(
+            global_morph_forms["case"], number_items, i, global_morph_forms["num_class"]
+        )
         numbers.append(
-            int2numeral_word(
-                number_item.value,
-                lang=lang,
-                case=__define_morph_case(
-                    global_morph_forms["case"],
-                    number_items,
-                    i,
-                    global_morph_forms["num_class"],
-                ),
-            ),
+            int2numeral_word(number_item.value, lang=lang, case=case),
         )
 
     return __process_numbers(numbers, number_items, lang=lang)
