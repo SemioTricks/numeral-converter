@@ -12,11 +12,11 @@ def convert_numerical_in_text(
     """
     Converts numerical string in text into integer values
 
-    :param text: input text
-    :param lang: input text language
-    :param max_mistakes_number_part: max mistakes number part:
+    :param str text: input text
+    :param str lang: input text language
+    :param float max_mistakes_number_part: max mistakes number part:
            mistakes number / string lenght
-    :return: update text
+    :return str: updated text with converted numerical into integer
 
     :Example:
 
