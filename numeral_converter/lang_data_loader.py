@@ -37,7 +37,8 @@ def load_numeral_data(lang: str):
     """
     Loads language `lang` data
 
-    :param str lang: language identifier
+    :param lang: language identifier;
+           to find out the list of available languages, use `get_available_languages()`
 
     :Example:
 
@@ -61,6 +62,32 @@ def load_numeral_data(lang: str):
 
     NUMERAL_DATA[lang] = __read_language_data(filename)
     NUMERAL_TREE[lang] = __build_numeral_tree(NUMERAL_DATA[lang])
+
+
+def maximum_number_order_to_convert(lang: str) -> int:
+    """
+    Order (log10(n)) of the maximum number that can be converted by the module
+    for a given language
+
+    :param lang: language identifier;
+           to find out the list of available languages, use `get_available_languages()`
+    :return int: max order
+
+    :Example:
+    >>> from numeral_converter import maximum_number_order_to_convert
+
+    >>> maximum_number_order_to_convert('uk'))
+    33
+
+    >>>  maximum_number_order_to_convert('ru')
+    123
+
+    >>> maximum_number_order_to_convert('en')
+    24
+
+    """
+    check_numeral_data_load(lang)
+    return max(NUMERAL_DATA[lang]["order"].values)
 
 
 def check_numeral_data_load(lang):

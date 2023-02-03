@@ -20,9 +20,13 @@ def numeral2int(numeral: str, lang: str) -> Optional[int]:
     """
     Converts input numeral in language `lang` into integer value
 
+    To find out the order (log10(n)) of the maximum number that can be converted
+    by the module use `maximum_number_order_to_convert()`
+
     :param numeral: input numeral in language `lang`
-    :param lang: language
-    :return Optional [int]: integer value or None if nothing found
+    :param lang: language identifier;
+           to find out the list of available languages, use `get_available_languages()`
+    :return Optional [int]: integer value; None if it fails to convert
 
     :Example:
 
@@ -42,11 +46,11 @@ def numeral2int(numeral: str, lang: str) -> Optional[int]:
 
     # another languages
     >>> load_numeral_data("ru")
-    >>> numeral2int("сорок второй", lang="uk")
+    >>> numeral2int("сорок второй", lang="ru")
     42
 
     >>> load_numeral_data("en")
-    >>> numeral2int("forty two", lang="uk")
+    >>> numeral2int("forty two", lang="en")
     42
 
     """
@@ -58,15 +62,23 @@ def numeral2int(numeral: str, lang: str) -> Optional[int]:
 def int2numeral(value: int, lang: str, **kwargs):
     """
     Converts input integer number into a numeral in language `lang`
-    into a morphological form given by the argument-parameters:
-        "case": 'accusative', 'dative', 'genetive', 'instrumental', 'nominative' or
-                'prepositional';
-        "num_class": 'collective', 'ordinal' or 'cardinal';
-        "gender": 'feminine', 'masculine' or 'neuter';
-        "number": 'plural' or 'singular'.
+    into a morphological form given by the argument-parameters
+
+    To find out the order (log10(n)) of the maximum number that can be converted
+    by the module use `maximum_number_order_to_convert()`
+
+
+    Possible argument-parameters and their possible values:
+
+    - "case": nominative', 'genetive', 'dative', 'instrumental', 'accusative'
+              or 'prepositional';
+    - "num_class": 'ordinal', 'cardinal' or 'collective';
+    - "gender": 'masculine', 'feminine' or 'neuter';
+    - "number": 'plural' or 'singular'
 
     :param value: input integer value
-    :param lang: language identifier
+    :param lang: language identifier;
+           to find out the list of available languages, use `get_available_languages()`
     :return str: string numeral in language `lang` in a morphological form
             given by the argument-parameters
 
