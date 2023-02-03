@@ -143,10 +143,13 @@ def test_scale_of_scale():
     )
 
     # "триста сотень три"
-    number_items2int(
-        number_items=[
-            NumberItem(value=300, order=2, scale=None),
-            NumberItem(value=100, order=2, scale=True),
-            NumberItem(value=3, order=0, scale=None),
-        ]
+    assert (
+        number_items2int(
+            number_items=[
+                NumberItem(value=300, order=2, scale=None),
+                NumberItem(value=100, order=2, scale=True),
+                NumberItem(value=3, order=0, scale=None),
+            ]
+        )
+        == 30003
     )
