@@ -61,7 +61,7 @@ def int2numeral(value: int, lang: str, **kwargs):
     into a morphological form given by the argument-parameters:
         "case": 'accusative', 'dative', 'genetive', 'instrumental', 'nominative' or
                 'prepositional';
-        "num_class": 'collective', 'ordinal' or 'quantitative';
+        "num_class": 'collective', 'ordinal' or 'cardinal';
         "gender": 'feminine', 'masculine' or 'neuter';
         "number": 'plural' or 'singular'.
 
@@ -75,16 +75,16 @@ def int2numeral(value: int, lang: str, **kwargs):
     >>> from numeral_converter import load_numeral_data, int2numeral
     >>> load_numeral_data("uk")
 
-    >>> int2numeral(42, case="nominative", num_class="quantitative")
+    >>> int2numeral(42, case="nominative", num_class="cardinal")
     {
         'numeral': 'сорок два',
         'numeral_forms': ['сорок два', ]
     }
 
-    >>> int2numeral(42, lang='uk', case="nominative", num_class="quantitative")
+    >>> int2numeral(42, lang='uk', case="nominative", num_class="cardinal")
     {'numeral': 'сорок два', 'numeral_forms': ['сорок два']}
 
-    >>> int2numeral(42, lang='uk', case="genetive", num_class="quantitative")
+    >>> int2numeral(42, lang='uk', case="genetive", num_class="cardinal")
     {'numeral': 'сорока двох', 'numeral_forms': ['сорока двох']}
 
     >>> int2numeral(
@@ -171,6 +171,12 @@ def number_items2int(number_items: List[NumberItem]) -> int:
 
 
 def int2number_items(number: int) -> List[NumberItem]:
+
+    if number == 0:
+        return [
+            NumberItem(0, -1, None),
+        ]
+
     number_items: List[NumberItem] = list()
     current_order, ones = 0, None
 
@@ -257,7 +263,7 @@ def number_items2numeral(number_items: List[NumberItem], lang: str, **kwargs):
     numbers = list()
 
     if num_class == "collective" and len(number_items) > 1:
-        num_class = "quantitative"
+        num_class = "cardinal"
 
     for i in range(len(number_items)):
 

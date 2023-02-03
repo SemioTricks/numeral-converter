@@ -4,8 +4,8 @@ from typing import Any, Dict
 DEFAULT_MORPH: Dict[str, Any] = OrderedDict(
     [
         ("case", "nominative"),
-        ("num_class", "quantitative"),
-        ("number", None),
+        ("num_class", "cardinal"),
+        ("number", "singular"),
         ("gender", "masculine"),
     ]
 )
@@ -19,7 +19,14 @@ MORPH_FORMS: Dict[str, Any] = {
         "nominative",
         "prepositional",
     ),
-    "num_class": ("collective", "ordinal", "quantitative"),
+    "num_class": (
+        "cardinal",  # en: one, two, three etc.
+        "collective",  # en: pair, dozen; uk: двое, троє, сотня
+        "ordinal",  # en: first, second, third, etc.
+        "multiplicative",  # en: once, twice and thrice
+        "multipliers",  # en: single, double, and triple
+        "distributive",  # en: singly, doubly, and triply
+    ),
     "gender": ("feminine", "masculine", "neuter"),
     "number": ("plural", "singular"),
 }

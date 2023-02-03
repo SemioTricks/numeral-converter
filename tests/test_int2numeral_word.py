@@ -31,9 +31,7 @@ def test_int2numeral_word_converting_in_different_morph_forms():
 
 
 def test_int2numeral_word_converting_in_not_full_morph_form():
-    msg = r"There are more then one values for number 1000 .+"
-    with pytest.raises(ValueError, match=msg):
-        int2numeral_word(1000, lang="uk")
+    assert int2numeral_word(1000, lang="uk").default == "тисяча"
 
 
 def test_int2numeral_word_number_without_data():
