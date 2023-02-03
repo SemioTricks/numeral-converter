@@ -74,14 +74,11 @@ def check_numeral_data_load(lang):
 
 
 def __read_language_data(filename: Path) -> pd.DataFrame:
+
     df = pd.read_csv(filename, sep=",")
-    df["order"] = df.order.apply(lambda x: int(x) if not pd.isnull(x) else -1)
-    df["value"] = df.apply(
-        lambda row: int(float(row.value))
-        if not pd.isnull(row.value)
-        else 10**row.order,
-        axis=1,
-    )
+    df["order"] = df.order.apply(int)
+    df["value"] = df.value.apply(int)
+
     for c in df.columns:
         df[c] = df[c].apply(lambda x: None if pd.isnull(x) else x)
 
@@ -101,7 +98,7 @@ def __build_numeral_tree(df: pd.DataFrame) -> FuzzyMultiDict:
                 "morph_forms": {
                     label: row[label]
                     for label in DEFAULT_MORPH.keys()
-                    if row.get(label)
+                    if row.get(label) is not None
                 },
                 "value": row["value"],
                 "order": row["order"],

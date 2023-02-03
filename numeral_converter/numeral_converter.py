@@ -123,12 +123,13 @@ def numeral2number_items(numeral: str, lang: str):
             if not len(number_word_info):
                 raise ValueError(f'ordinal numeral word "{number_word}" inside numeral')
 
+        __item = number_word_info[0]["value"]
         number_items.insert(
             0,
             NumberItem(
-                value=number_word_info[0]["value"]["value"],
-                order=number_word_info[0]["value"]["order"],
-                scale=number_word_info[0]["value"]["scale"],
+                value=__item["value"] if not __item["scale"] else 10 ** __item["order"],
+                order=__item["order"],
+                scale=__item["scale"],
             ),
         )
 
@@ -142,7 +143,7 @@ def number_items2int(number_items: List[NumberItem]) -> int:
     i_number = num_block_start = 0
     num_block_order = 0
 
-    if number_items[0].scale is not None:
+    if number_items[0].scale:
         i_number = num_block_start = 1
         num_block_order = number_items[0].order
 
@@ -154,8 +155,8 @@ def number_items2int(number_items: List[NumberItem]) -> int:
             if inner_order
             else max(sum([x.value for x in number_items[num_block_start:i_number]]), 1)
         )
-        int_value += (10**num_block_order) * __value
 
+        int_value += (10**num_block_order) * __value
         if i_number >= len(number_items):
             return int_value
 
@@ -250,7 +251,6 @@ def int2numeral_word(value: int, lang: str, **kwargs) -> NumeralWord:
             )
 
     numeral_words = [x.strip() for x in sub_data.iloc[0].string.split(" ") if x]
-
     return NumeralWord(numeral_words[0], numeral_words[1:])
 
 
@@ -461,9 +461,10 @@ def __check_correct_order(
 
 
 def __search_block(number_items, start, num_block_order):
+
     inner_order = None
     while start < len(number_items) and (
-        number_items[start].scale is None or number_items[start].order < num_block_order
+        not number_items[start].scale or number_items[start].order < num_block_order
     ):
         if number_items[start].scale and (
             inner_order is None or inner_order < number_items[start].order

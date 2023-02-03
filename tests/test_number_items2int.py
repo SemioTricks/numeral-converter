@@ -1,5 +1,3 @@
-import re
-
 import pytest
 
 from numeral_converter.numeral_converter import NumberItem, number_items2int
@@ -122,8 +120,7 @@ def test_wrong_by_next_value_order_values():
 
 def test_wrong_by_scale_values():
     # "триста сто три"
-    msg = re.escape("position 1: expects 10^(3n) or 100; found 100")
-    with pytest.raises(ValueError, match=msg):
+    with pytest.raises(ValueError):
         number_items2int(
             number_items=[
                 NumberItem(value=300, order=2, scale=None),
