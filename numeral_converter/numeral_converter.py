@@ -267,6 +267,46 @@ def __define_morph_number(
     return number
 
 
+def __define_morph_case(global_case, number_items, i, global_num_class):
+    case = global_case
+    prev_value = number_items[i - 1].value if i > 0 else 1
+
+    if i == len(number_items) - 1:
+        if number_items[i].scale:
+
+            case = (
+                "nominative"
+                if prev_value == 1
+                else "nominative"
+                if prev_value in (2, 3, 4)
+                else "genetive"
+            )
+
+        return case
+
+    if global_num_class == "ordinal":
+        case = "nominative"
+
+    if (
+        (0 < number_items[i].value < 10)
+        and (i + 1 < len(number_items))
+        and number_items[i + 1].scale
+    ):
+        if case == "accusative":
+            case = "nominative"
+        return case
+
+    if number_items[i].scale:
+        if case in ("nominative", "accusative"):
+            case = "nominative" if prev_value in (1, 2, 3, 4) else "genetive"
+            return case
+
+    if case == "accusative" and i != len(number_items) - 2:
+        case = "nominative"
+
+    return case
+
+
 def number_items2numeral(number_items: List[NumberItem], lang: str, **kwargs):
 
     global_morph_forms = {
@@ -279,28 +319,20 @@ def number_items2numeral(number_items: List[NumberItem], lang: str, **kwargs):
         # todo warn
         global_morph_forms["num_class"] = "cardinal"
 
-    for i in range(len(number_items)):
+    for i, number_item in enumerate(number_items):
 
-        number_item = number_items[i]
         if i == len(number_items) - 1:
-
-            __case = global_morph_forms["case"]
-
-            if number_item.scale:
-                __prev_value = number_items[i - 1].value if i > 0 else 1
-                __case = (
-                    "nominative"
-                    if __prev_value == 1
-                    else "nominative"
-                    if __prev_value in (2, 3, 4)
-                    else "genetive"
-                )
 
             numbers.append(
                 int2numeral_word(
                     number_item.value,
                     lang=lang,
-                    case=__case,
+                    case=__define_morph_case(
+                        global_morph_forms["case"],
+                        number_items,
+                        i,
+                        global_morph_forms["num_class"],
+                    ),
                     num_class=global_morph_forms["num_class"],
                     gender=global_morph_forms["gender"],
                     number=__define_morph_number(
@@ -311,39 +343,40 @@ def number_items2numeral(number_items: List[NumberItem], lang: str, **kwargs):
 
             continue
 
-        __case = (
-            "nominative"
-            if global_morph_forms["num_class"] == "ordinal"
-            else global_morph_forms["case"]
-        )
-
         if (
             (0 < number_item.value < 10)
             and (i + 1 < len(number_items))
             and number_items[i + 1].scale
         ):
-            ___case = "nominative" if __case in ("nominative", "accusative") else __case
             __gender = "feminine" if number_items[i + 1].value == 1000 else "masculine"
-
-            numbers.append(
-                int2numeral_word(
-                    number_item.value, lang=lang, case=___case, gender=__gender
-                )
-            )
-            continue
-
-        if number_item.scale:
-            __prev_value = number_items[i - 1].value if i > 0 else 1
-
-            ___case = __case
-            if __case in ("nominative", "accusative"):
-                ___case = "nominative" if __prev_value in (1, 2, 3, 4) else "genetive"
 
             numbers.append(
                 int2numeral_word(
                     number_item.value,
                     lang=lang,
-                    case=___case,
+                    case=__define_morph_case(
+                        global_morph_forms["case"],
+                        number_items,
+                        i,
+                        global_morph_forms["num_class"],
+                    ),
+                    gender=__gender,
+                )
+            )
+            continue
+
+        if number_item.scale:
+
+            numbers.append(
+                int2numeral_word(
+                    number_item.value,
+                    lang=lang,
+                    case=__define_morph_case(
+                        global_morph_forms["case"],
+                        number_items,
+                        i,
+                        global_morph_forms["num_class"],
+                    ),
                     number=__define_morph_number(
                         global_morph_forms["number"], number_items, i
                     ),
@@ -351,13 +384,17 @@ def number_items2numeral(number_items: List[NumberItem], lang: str, **kwargs):
             )
             continue
 
-        ___case = (
-            "nominative"
-            if __case == "accusative" and i != len(number_items) - 2
-            else __case
-        )
         numbers.append(
-            int2numeral_word(number_item.value, lang=lang, case=___case),
+            int2numeral_word(
+                number_item.value,
+                lang=lang,
+                case=__define_morph_case(
+                    global_morph_forms["case"],
+                    number_items,
+                    i,
+                    global_morph_forms["num_class"],
+                ),
+            ),
         )
 
     return __process_numbers(numbers, number_items, lang=lang)
