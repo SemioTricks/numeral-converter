@@ -255,24 +255,29 @@ def int2numeral_word(value: int, lang: str, **kwargs) -> NumeralWord:
 
 
 def number_items2numeral(number_items: List[NumberItem], lang: str, **kwargs):
-    case = kwargs.get("case") or DEFAULT_MORPH["case"]
-    num_class = kwargs.get("num_class") or DEFAULT_MORPH["num_class"]
-    number = kwargs.get("number") or DEFAULT_MORPH["number"]
-    gender = kwargs.get("gender") or DEFAULT_MORPH["gender"]
+
+    global_morph_forms = {
+        label: kwargs.get(label) or value for label, value in DEFAULT_MORPH.items()
+    }
+
+    # case = kwargs.get("case") or DEFAULT_MORPH["case"]
+    # num_class = kwargs.get("num_class") or DEFAULT_MORPH["num_class"]
+    # number = kwargs.get("number") or DEFAULT_MORPH["number"]
+    # gender = kwargs.get("gender") or DEFAULT_MORPH["gender"]
 
     numbers = list()
 
-    if num_class == "collective" and len(number_items) > 1:
-        num_class = "cardinal"
+    if global_morph_forms["num_class"] == "collective" and len(number_items) > 1:
+        # todo warn
+        global_morph_forms["num_class"] = "cardinal"
 
     for i in range(len(number_items)):
 
         number_item = number_items[i]
-
         if i == len(number_items) - 1:
 
-            __number = number
-            __case = case
+            __number = global_morph_forms["number"]
+            __case = global_morph_forms["case"]
             if number_item.scale:
                 __prev_value = number_items[i - 1].value if i > 0 else 1
                 __number = "singular" if __prev_value == 1 else "plural"
@@ -289,15 +294,19 @@ def number_items2numeral(number_items: List[NumberItem], lang: str, **kwargs):
                     number_item.value,
                     lang=lang,
                     case=__case,
-                    num_class=num_class,
-                    gender=gender,
+                    num_class=global_morph_forms["num_class"],
+                    gender=global_morph_forms["gender"],
                     number=__number,
                 )
             )
 
             continue
 
-        __case = "nominative" if num_class == "ordinal" else case
+        __case = (
+            "nominative"
+            if global_morph_forms["num_class"] == "ordinal"
+            else global_morph_forms["case"]
+        )
 
         if (
             (0 < number_item.value < 10)
