@@ -254,16 +254,24 @@ def int2numeral_word(value: int, lang: str, **kwargs) -> NumeralWord:
     return NumeralWord(numeral_words[0], numeral_words[1:])
 
 
+def __define_morph_number(
+    global_number: str, number_items: List[NumberItem], i: int
+) -> str:
+    number = global_number
+
+    prev_value = number_items[i - 1].value if i > 0 else 1
+
+    if number_items[i].scale:
+        number = "singular" if prev_value == 1 else "plural"
+
+    return number
+
+
 def number_items2numeral(number_items: List[NumberItem], lang: str, **kwargs):
 
     global_morph_forms = {
         label: kwargs.get(label) or value for label, value in DEFAULT_MORPH.items()
     }
-
-    # case = kwargs.get("case") or DEFAULT_MORPH["case"]
-    # num_class = kwargs.get("num_class") or DEFAULT_MORPH["num_class"]
-    # number = kwargs.get("number") or DEFAULT_MORPH["number"]
-    # gender = kwargs.get("gender") or DEFAULT_MORPH["gender"]
 
     numbers = list()
 
@@ -276,11 +284,10 @@ def number_items2numeral(number_items: List[NumberItem], lang: str, **kwargs):
         number_item = number_items[i]
         if i == len(number_items) - 1:
 
-            __number = global_morph_forms["number"]
             __case = global_morph_forms["case"]
+
             if number_item.scale:
                 __prev_value = number_items[i - 1].value if i > 0 else 1
-                __number = "singular" if __prev_value == 1 else "plural"
                 __case = (
                     "nominative"
                     if __prev_value == 1
@@ -296,7 +303,9 @@ def number_items2numeral(number_items: List[NumberItem], lang: str, **kwargs):
                     case=__case,
                     num_class=global_morph_forms["num_class"],
                     gender=global_morph_forms["gender"],
-                    number=__number,
+                    number=__define_morph_number(
+                        global_morph_forms["number"], number_items, i
+                    ),
                 )
             )
 
@@ -325,7 +334,6 @@ def number_items2numeral(number_items: List[NumberItem], lang: str, **kwargs):
 
         if number_item.scale:
             __prev_value = number_items[i - 1].value if i > 0 else 1
-            __number = "singular" if __prev_value == 1 else "plural"
 
             ___case = __case
             if __case in ("nominative", "accusative"):
@@ -333,7 +341,12 @@ def number_items2numeral(number_items: List[NumberItem], lang: str, **kwargs):
 
             numbers.append(
                 int2numeral_word(
-                    number_item.value, lang=lang, case=___case, number=__number
+                    number_item.value,
+                    lang=lang,
+                    case=___case,
+                    number=__define_morph_number(
+                        global_morph_forms["number"], number_items, i
+                    ),
                 )
             )
             continue
