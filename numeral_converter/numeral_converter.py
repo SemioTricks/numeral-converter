@@ -94,7 +94,8 @@ def int2numeral(value: int, lang: str, **kwargs):
     """
     __check_kwargs(kwargs)
 
-    numeral_items = int2number_items(value)
+    numeral_items = int2number_items(value, lang)
+
     numeral = number_items2numeral(
         numeral_items,
         lang=lang,
@@ -171,8 +172,8 @@ def number_items2int(number_items: List[NumberItem]) -> int:
     return int_value
 
 
-def int2number_items(number: int) -> List[NumberItem]:
-
+def int2number_items(number: int, lang: str) -> List[NumberItem]:
+    check_numeral_data_load(lang)
     if number == 0:
         return [
             NumberItem(0, -1, None),
@@ -181,37 +182,59 @@ def int2number_items(number: int) -> List[NumberItem]:
     number_items: List[NumberItem] = list()
     current_order, ones = 0, None
 
+    mem = None
+
     while number:
         digit = number % 10
         if current_order % 3 == 2 and digit:
+            if mem:
+                number_items.insert(0, mem)
+                mem = None
             number_items.insert(0, NumberItem(100 * digit, current_order % 3, None))
+
         elif current_order % 3 == 0:
             ones = digit
             if current_order > 0:
-                number_items.insert(
-                    0, NumberItem(10**current_order, current_order, True)
-                )
+                mem = NumberItem(10**current_order, current_order, True)
         else:
             if digit == 1 and ones > 0:
                 value = 10 * digit + ones
                 if value:
+                    if mem:
+                        number_items.insert(0, mem)
+                        mem = None
                     number_items.insert(0, NumberItem(value, current_order % 3, None))
             else:
                 if ones:
+                    if mem:
+                        number_items.insert(0, mem)
+                        mem = None
                     number_items.insert(0, NumberItem(ones, 0, None))
+
                 if digit:
+                    if mem:
+                        number_items.insert(0, mem)
+                        mem = None
                     number_items.insert(
                         0, NumberItem(10 * digit, current_order % 3, None)
                     )
+
             ones = None
 
         current_order += 1
         number = number // 10
 
     if ones:
+        if mem:
+            number_items.insert(0, mem)
         number_items.insert(0, NumberItem(ones, 0, None))
 
     if number_items[0].scale is not None:
+        number_items.insert(0, NumberItem(1, 0, None))
+    elif number_items[0].value == 100 and lang == "en":
+        number_item = NumberItem(number_items[0].value, number_items[0].order, True)
+        number_items = number_items[1:]
+        number_items.insert(0, number_item)
         number_items.insert(0, NumberItem(1, 0, None))
 
     return number_items
@@ -221,7 +244,12 @@ def int2numeral_word(value: int, lang: str, **kwargs) -> NumeralWord:
     __check_kwargs(kwargs)
     check_numeral_data_load(lang)
 
-    sub_data = NUMERAL_DATA[lang][NUMERAL_DATA[lang].value == value]
+    if value == 0 or math.log10(value) < 6:
+        sub_data = NUMERAL_DATA[lang][NUMERAL_DATA[lang].value == value]
+    else:
+        sub_data = NUMERAL_DATA[lang][
+            NUMERAL_DATA[lang].order == int(math.log10(value))
+        ]
 
     if sub_data.shape[0] == 0:
         raise ValueError(f"no data for number {value}")

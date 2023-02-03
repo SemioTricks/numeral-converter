@@ -10,6 +10,9 @@ def test_int2numeral():
     R = int2numeral(2023, lang="uk")
     assert R["numeral"] == "дві тисячі двадцять три"
 
+    R = int2numeral(2023, lang="uk", num_class="ordinal")
+    assert R["numeral"] == "дві тисячі двадцять третій"
+
     R = int2numeral(1000, lang="uk")
     assert R["numeral"] == "одна тисяча"
 
@@ -18,6 +21,9 @@ def test_int2numeral():
 
     R = int2numeral(2023, lang="en")
     assert R["numeral"] == "two thousand twenty-three"
+
+    R = int2numeral(2023, lang="en", num_class="ordinal")
+    assert R["numeral"] == "two thousand twenty-third"
 
     R = int2numeral(1000, lang="en")
     assert R["numeral"] == "one thousand"
@@ -2309,3 +2315,42 @@ def test_zeros():
 
     assert int2numeral(0, lang="ru")["numeral"] == "ноль"
     assert int2numeral(0, lang="en")["numeral"] == "zero (nought)"
+
+
+def test_scales():
+
+    assert int2numeral(10000, lang="ru")["numeral"] == "десять тысяч"
+    assert int2numeral(100000, lang="ru")["numeral"] == "сто тысяч"
+    assert int2numeral(1000000, lang="ru")["numeral"] == "один миллион"
+    assert int2numeral(10000000, lang="ru")["numeral"] == "десять миллионов"
+    assert int2numeral(100000000, lang="ru")["numeral"] == "сто миллионов"
+    assert int2numeral(1000000000, lang="ru")["numeral"] == "один миллиард"
+    assert int2numeral(1000000000000, lang="ru")["numeral"] == "один триллион"
+    assert (
+        int2numeral(100000000000000000000000000, lang="ru")["numeral"]
+        == "сто септиллионов"
+    )
+
+    assert int2numeral(10000, lang="uk")["numeral"] == "десять тисяч"
+    assert int2numeral(100000, lang="uk")["numeral"] == "сто тисяч"
+    assert int2numeral(1000000, lang="uk")["numeral"] == "один мільйон"
+    assert int2numeral(10000000, lang="uk")["numeral"] == "десять мільйонів"
+    assert int2numeral(100000000, lang="uk")["numeral"] == "сто мільйонів"
+    assert int2numeral(1000000000, lang="uk")["numeral"] == "один мільярд"
+    assert int2numeral(1000000000000, lang="uk")["numeral"] == "один трильйон"
+    assert (
+        int2numeral(100000000000000000000000000, lang="uk")["numeral"]
+        == "сто септильйонів"
+    )
+
+    assert int2numeral(10000, lang="en")["numeral"] == "ten thousand"
+    assert int2numeral(100000, lang="en")["numeral"] == "one hundred thousand"
+    assert int2numeral(1000000, lang="en")["numeral"] == "one million"
+    assert int2numeral(10000000, lang="en")["numeral"] == "ten million"
+    assert int2numeral(100000000, lang="en")["numeral"] == "one hundred million"
+    assert int2numeral(1000000000, lang="en")["numeral"] == "one billion"
+    assert int2numeral(1000000000000, lang="en")["numeral"] == "one trillion"
+    assert (
+        int2numeral(100000000000000000000000000, lang="en")["numeral"]
+        == "one hundred septilion"
+    )

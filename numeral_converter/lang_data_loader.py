@@ -77,7 +77,9 @@ def __read_language_data(filename: Path) -> pd.DataFrame:
 
     df = pd.read_csv(filename, sep=",")
     df["order"] = df.order.apply(int)
-    df["value"] = df.value.apply(int)
+    df["value"] = df.apply(
+        lambda row: int(row.value) if row.order < 6 else None, axis=1
+    )
 
     for c in df.columns:
         df[c] = df[c].apply(lambda x: None if pd.isnull(x) else x)
@@ -100,7 +102,7 @@ def __build_numeral_tree(df: pd.DataFrame) -> FuzzyMultiDict:
                     for label in DEFAULT_MORPH.keys()
                     if row.get(label) is not None
                 },
-                "value": row["value"],
+                "value": row["value"] if row.order < 6 else 10**row.order,
                 "order": row["order"],
                 "scale": row["scale"],
             }

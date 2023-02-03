@@ -17,7 +17,7 @@ def test_numeral2int():
         == 142031
     )
     assert (numeral2int("nine hundred and ninety-nine thousand", lang="en")) == 999000
-    assert (numeral2int("two thousand and twenty-three", lang="en")) == 2023
+    assert (numeral2int("two thousand and twenty-third", lang="en")) == 2023
 
 
 def test_numeral2int_unprocessed():
