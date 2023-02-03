@@ -159,7 +159,7 @@ def number_items2int(number_items: List[NumberItem]) -> int:
 
         int_value += (10**num_block_order) * __value
         if i_number >= len(number_items):
-            return int_value
+            return int(int_value)
 
         __check_number_is_correct_scale(number_items, i_number, int_value)
         num_block_order = number_items[i_number].order
@@ -169,7 +169,7 @@ def number_items2int(number_items: List[NumberItem]) -> int:
     if num_block_start is not None:
         int_value += 10**num_block_order
 
-    return int_value
+    return int(int_value)
 
 
 def int2number_items(number: int, lang: str) -> List[NumberItem]:
