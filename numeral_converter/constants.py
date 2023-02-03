@@ -23,9 +23,6 @@ MORPH_FORMS: Dict[str, Any] = {
         "cardinal",  # en: one, two, three etc.
         "collective",  # en: pair, dozen; uk: двое, троє, сотня
         "ordinal",  # en: first, second, third, etc.
-        "multiplicative",  # en: once, twice and thrice
-        "multipliers",  # en: single, double, and triple
-        "distributive",  # en: singly, doubly, and triply
     ),
     "gender": ("feminine", "masculine", "neuter"),
     "number": ("plural", "singular"),
