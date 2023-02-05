@@ -26,16 +26,22 @@ Numeral converter:
 from numeral_converter import (
     get_available_languages, 
     load_numeral_data,
-    numeral2int,
-    int2numeral,
-    convert_numerical_in_text
+    maximum_number_order_to_convert
 )
 get_available_languages()
 # ['uk', 'ru', 'en']
 
 load_numeral_data('en')
+maximum_number_order_to_convert("en")
+# 24
+
 load_numeral_data('uk')
+maximum_number_order_to_convert("uk")
+# 33
+
 load_numeral_data('ru')
+maximum_number_order_to_convert("ru")
+# 123
 ```
 
 ## Converting from Numeral to Integer
