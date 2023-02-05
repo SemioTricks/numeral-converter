@@ -122,7 +122,7 @@ def int2numeral(value: int, lang: str, **kwargs):
 
 def numeral2number_items(numeral: str, lang: str):
     check_numeral_data_load(lang)
-    numeral = __preprocess_numeral(numeral, lang)
+    numeral = preprocess_numeral(numeral, lang)
 
     number_items: List[NumberItem] = list()
 
@@ -405,8 +405,7 @@ def __process_numbers(
     return {"numeral": numeral, "numeral_forms": numeral_forms}
 
 
-def __preprocess_numeral(numeral: str, lang: str) -> str:
-
+def preprocess_numeral(numeral: str, lang: str) -> str:
     if lang == "en":
         numeral = re.sub(r"-", " ", numeral)
         numeral = re.sub(r"\sand\s", " ", numeral)

@@ -1,19 +1,27 @@
+import re
+from typing import List
+
 from .numeral_converter import (
     NUMERAL_TREE,
     NumberItem,
     check_numeral_data_load,
     number_items2int,
+    preprocess_numeral,
 )
 
 
 def convert_numerical_in_text(
-    text: str, lang: str, max_mistakes_number_part=0.2
+    text: str,
+    lang: str,
+    max_mistakes_number: int = 0,
+    max_mistakes_number_part: float = 1e-5,
 ) -> str:
     """
     Converts numerical string in text into integer values
 
     :param str text: input text
     :param str lang: input text language
+    :param float max_mistakes_number: max mistakes number
     :param float max_mistakes_number_part: max mistakes number part:
            mistakes number / string lenght
     :return str: updated text with converted numerical into integer
@@ -32,25 +40,52 @@ def convert_numerical_in_text(
     """
     check_numeral_data_load(lang)
 
-    updated_text_tokens = list()
+    updated_text = str()
+    i = 0
 
-    __number_items = list()
-    for token in text.split(" "):
-        numerical = NUMERAL_TREE[lang].get(
-            token, max_mistakes_number_part=max_mistakes_number_part
+    __number_items: List[NumberItem] = list()
+    __prev_number_end = None
+
+    for match in re.finditer("[a-zA-Zа-яА-ЯїЇґҐєЄёЁіІ'’]+", text):
+
+        numeral = NUMERAL_TREE[lang].get(
+            preprocess_numeral(match.group(), lang=lang),
+            max_mistakes_number=max_mistakes_number,
+            max_mistakes_number_part=max_mistakes_number_part,
         )
-        if numerical:
-            __number_items.append(
-                NumberItem(
-                    numerical[0]["value"]["value"],
-                    numerical[0]["value"]["order"],
-                    numerical[0]["value"]["scale"],
-                )
-            )
-        else:
-            if __number_items:
-                updated_text_tokens.append(str(number_items2int(__number_items)))
-                __number_items = list()
-            updated_text_tokens.append(token)
 
-    return " ".join(updated_text_tokens)
+        if numeral:
+            __number_item = NumberItem(
+                numeral[0]["value"]["value"],
+                numeral[0]["value"]["order"],
+                numeral[0]["value"]["scale"],
+            )
+
+            # number starts
+            if not len(__number_items):
+                updated_text += text[i : match.span()[0]]
+                __number_items.append(__number_item)
+                __prev_number_end = match.span()[1]
+                i = match.span()[1]
+
+            # number continues
+            elif match.span()[0] - __prev_number_end < 2:
+                __number_items.append(__number_item)
+                __prev_number_end = match.span()[1]
+                i = match.span()[1]
+
+            # prev number ends, new number starts
+            else:
+                updated_text += str(number_items2int(__number_items))
+                updated_text += text[i : match.span()[0]]
+                __number_items = [
+                    __number_item,
+                ]
+                __prev_number_end = match.span()[1]
+                i = match.span()[1]
+
+    if __number_items:
+        updated_text += str(number_items2int(__number_items))
+
+    updated_text += text[i:]
+    return updated_text
