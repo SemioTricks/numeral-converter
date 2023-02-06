@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# custom
+.pypirc
+.to_ignore
+coveralls.yml
+lint.txt
