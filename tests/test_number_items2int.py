@@ -4,7 +4,6 @@ from numeral_converter.numeral_converter import NumberItem, number_items2int
 
 
 def test_number_items2int():
-
     # "тисяча сто"
     assert (
         number_items2int(
@@ -56,13 +55,11 @@ def test_number_items2int():
 
 
 def test_less_eq_summary_order_in_next_group():
-
     msg = (
         r"position 1: order of 1000000000:9 is less/equal "
         r"of summary order in next group: 9"
     )
     with pytest.raises(ValueError, match=msg):
-
         number_items2int(
             [
                 NumberItem(value=3, order=0, scale=None),

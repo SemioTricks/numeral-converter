@@ -4,7 +4,6 @@ from numeral_converter.numeral_converter import numeral2number_items
 
 
 def test_numeral2number_items_uk():
-
     R = numeral2number_items(
         "двісти тридцать чотири тисячі шістот п’ятнадцять", lang="uk"
     )
@@ -57,7 +56,6 @@ def test_numeral2number_items_uk():
 
 
 def test_numeral2number_items_ru():
-
     R = numeral2number_items(
         "двести тридцать четыре тысячи шестьсот пятнадцать", lang="ru"
     )

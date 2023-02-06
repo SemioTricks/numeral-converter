@@ -101,7 +101,6 @@ def check_numeral_data_load(lang):
 
 
 def __read_language_data(filename: Path) -> pd.DataFrame:
-
     df = pd.read_csv(filename, sep=",")
     df["order"] = df.order.apply(int)
     df["value"] = df.apply(
@@ -119,7 +118,6 @@ def __build_numeral_tree(df: pd.DataFrame) -> FuzzyMultiDict:
 
     for i, row in df.iterrows():
         for string in row["string"].split(" "):
-
             if not string:
                 continue
 

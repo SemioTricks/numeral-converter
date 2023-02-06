@@ -192,7 +192,7 @@ def int2number_items(number: int, lang: str) -> List[NumberItem]:
         ]
 
     number_items: List[NumberItem] = list()
-    current_order, ones = 0, None
+    current_order, ones = 0, None  # type: int, Optional[int]
 
     mem = None
 
@@ -295,7 +295,6 @@ def int2numeral_word(value: int, lang: str, **kwargs) -> NumeralWord:
 
 
 def number_items2numeral(number_items: List[NumberItem], lang: str, **kwargs):
-
     mf = {label: kwargs.get(label) or value for label, value in DEFAULT_MORPH.items()}
     if mf["num_class"] == "collective" and len(number_items) > 1:
         warnings.warn("Can't convert to collective numeral number; cardinal used")
@@ -357,7 +356,6 @@ def __check_kwargs(kwargs):
 def __process_numbers(
     numbers: List[NumeralWord], number_items, lang: str
 ) -> Dict[str, Any]:
-
     if lang == "en":
         numbers__ = numbers.copy()
         numbers = list()
@@ -439,7 +437,6 @@ def __delete_ordinal_from_numeral_word_info(
 def __check_correct_order(
     number_items: List[NumberItem], start: int, end: int, inner_order: Optional[int]
 ):
-
     for k in range(start + 1, end):
         __order = (
             0
@@ -463,7 +460,6 @@ def __check_correct_order(
 
 
 def __search_block(number_items, start, num_block_order):
-
     inner_order = None
     while start < len(number_items) and (
         not number_items[start].scale or number_items[start].order < num_block_order
@@ -477,7 +473,6 @@ def __search_block(number_items, start, num_block_order):
 
 
 def __check_number_is_correct_scale(number_items, i_number, int_value):
-
     if not number_items[i_number].scale:
         raise ValueError(
             f"position {len(number_items) - 1 - i_number}: expects 10^(3n) or 100; "
@@ -523,7 +518,6 @@ def __define_morph_case(global_case, number_items, i, global_num_class):
 
     if i == len(number_items) - 1:
         if number_items[i].scale:
-
             case = (
                 "nominative"
                 if prev_value == 1

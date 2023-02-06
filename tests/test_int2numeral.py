@@ -2318,7 +2318,6 @@ def test_zeros():
 
 
 def test_scales():
-
     assert int2numeral(10000, lang="ru")["numeral"] == "десять тысяч"
     assert int2numeral(100000, lang="ru")["numeral"] == "сто тысяч"
     assert int2numeral(1000000, lang="ru")["numeral"] == "один миллион"

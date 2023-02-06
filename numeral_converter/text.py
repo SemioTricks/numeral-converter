@@ -1,6 +1,6 @@
-import re
-from typing import List
+from typing import List, Optional
 
+from .constants import REGEX_PATTERN_WORDS
 from .numeral_converter import (
     NUMERAL_TREE,
     NumberItem,
@@ -44,10 +44,9 @@ def convert_numerical_in_text(
     i = 0
 
     __number_items: List[NumberItem] = list()
-    __prev_number_end = None
+    __prev_number_end = None  # type: Optional[int]
 
-    for match in re.finditer("[a-zA-Zа-яА-ЯїЇґҐєЄёЁіІ'’]+", text):
-
+    for match in REGEX_PATTERN_WORDS.finditer(text):
         numeral = NUMERAL_TREE[lang].get(
             preprocess_numeral(match.group(), lang=lang),
             max_mistakes_number=max_mistakes_number,

@@ -1,3 +1,4 @@
+import re
 from collections import OrderedDict
 from typing import Any, Dict
 
@@ -27,3 +28,6 @@ MORPH_FORMS: Dict[str, Any] = {
     "gender": ("feminine", "masculine", "neuter"),
     "number": ("plural", "singular"),
 }
+
+
+REGEX_PATTERN_WORDS = re.compile("[a-zA-Zа-яА-ЯїЇґҐєЄёЁіІ'’]+")
