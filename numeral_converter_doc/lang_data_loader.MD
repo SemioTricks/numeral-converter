@@ -15,10 +15,21 @@ Loads language `lang` data
 ```
         
 ### Argument(s)
-+ `lang`: str - language identifier
++ `lang`: str - language identifier;
+to find out the list of available languages, use `get_available_languages()`
 :Example:
 >>> from numeral_converter import load_numeral_data
 >>> load_numeral_data('uk')
+## Function  `maximum_number_order_to_convert`
+```text
+Order (log10(n)) of the maximum number that can be converted by the module
+for a given language
+```
+        
+### Argument(s)
++ `lang`: str - language identifier;
+to find out the list of available languages, use `get_available_languages()`
+#### Declared returns: `int`
 ## Function  `check_numeral_data_load`
 ### Argument(s)
 + `lang` - empty doc string
