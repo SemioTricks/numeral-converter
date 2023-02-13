@@ -13,17 +13,21 @@ from .numeral_converter import (
 def convert_numerical_in_text(
     text: str,
     lang: str,
-    max_mistakes_number: int = 0,
-    max_mistakes_number_part: float = 1e-5,
+    max_corrections: int = 0,
+    max_corrections_relative: float = 0,
 ) -> str:
     """
     Converts numerical string in text into integer values
 
     :param str text: input text
     :param str lang: input text language
-    :param float max_mistakes_number: max mistakes number
-    :param float max_mistakes_number_part: max mistakes number part:
-           mistakes number / string lenght
+    :param int max_corrections: default value of maximum number of corrections
+           in the query key when searching for a matching dictionary key;
+           default = 0
+    :param Optional[float] max_corrections_relative: default value to calculate
+           maximum number of corrections in the query key when searching
+           for a matching dictionary key; default = 0
+           calculated as round(max_corrections_relative * token_length)
     :return str: updated text with converted numerical into integer
 
     :Example:
@@ -50,8 +54,8 @@ def convert_numerical_in_text(
 
         numeral = NUMERAL_TREE[lang].get(
             preprocess_numeral(match.group(), lang=lang),
-            max_mistakes_number=max_mistakes_number,
-            max_mistakes_number_part=max_mistakes_number_part,
+            max_corrections=max_corrections,
+            max_corrections_relative=max_corrections_relative,
         )
 
         if numeral:

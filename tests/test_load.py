@@ -36,9 +36,6 @@ def test_get_available_languages():
 
 
 def test_maximum_number_order_to_convert():
-    print(maximum_number_order_to_convert("uk"))
-    33
-    print(maximum_number_order_to_convert("ru"))
-    123
-    print(maximum_number_order_to_convert("en"))
-    24
+    assert maximum_number_order_to_convert("uk") > 10
+    assert maximum_number_order_to_convert("ru") > 10
+    assert maximum_number_order_to_convert("en") > 10

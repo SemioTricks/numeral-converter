@@ -8,6 +8,7 @@ packages = [{include = "numeral_converter"}]
 
 [tool.poetry.dependencies]
 python = "^3.9"
+fuzzy-multi-dict = "^0.0.4"
 
 
 [build-system]
