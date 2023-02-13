@@ -1,7 +1,7 @@
 # Numeral Converter
 
 [![Coverage Status](https://img.shields.io/badge/%20Python%20Versions-%3E%3D3.9-informational)](https://pypi.org/project/numeral-converter/)
-[![Coverage Status](https://coveralls.io/repos/github/SemioTricks/numeral-converter/badge.svg?branch=feature/upd_loader_and_project)](https://coveralls.io/github/SemioTricks/numeral-converter?branch=feature/upd_loader_and_project)
+[![Coverage Status](https://coveralls.io/repos/github/SemioTricks/numeral-converter/badge.svg?branch=main)](https://coveralls.io/github/SemioTricks/numeral-converter?branch=main)
 
 [![Coverage Status](https://img.shields.io/badge/Version-0.0.1-informational)](https://github.com/SemioTricks/numeral-converter)
 [![Coverage Status](https://img.shields.io/badge/Docs-passed-green)](https://github.com/SemioTricks/numeral-converter/tree/main/docs)
@@ -16,7 +16,7 @@ Numeral converter:
 
 # Installation
 
-> pip install numeral_converter
+> pip install numeral-converter
 
 # Quickstart
 

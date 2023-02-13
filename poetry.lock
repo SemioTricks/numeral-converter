@@ -29,14 +29,14 @@ files = [
 
 [[package]]
 name = "fuzzy-multi-dict"
-version = "0.0.3"
-description = ""
+version = "0.0.4"
+description = "`fuzzy-multi-dict` is a module that provides a hight-flexible structure for storing and accessing information by a string key."
 category = "main"
 optional = false
 python-versions = ">=3.9,<4.0"
 files = [
-    {file = "fuzzy_multi_dict-0.0.3-py3-none-any.whl", hash = "sha256:dbfd52955aa7ce88ffebdf4e67dad5e699ed2dd4dca03693f855aeaeaad3305b"},
-    {file = "fuzzy_multi_dict-0.0.3.tar.gz", hash = "sha256:4deb75355d088595106b0de706235d390a79044a8bc20cb850b52a9b41c104f1"},
+    {file = "fuzzy_multi_dict-0.0.4-py3-none-any.whl", hash = "sha256:22eeb1a325203f38209ecf19274d027cf8e1a2b625b6dc4463f2622bd38ae4ab"},
+    {file = "fuzzy_multi_dict-0.0.4.tar.gz", hash = "sha256:be9374d6715e505ee0c1a63edb73fd29bfcba728c5fb64ed3d33a1e7bd83bfec"},
 ]
 
 [[package]]
@@ -183,4 +183,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "44b69693dddbd1aebb7768090ea7631c71c4f08223e178d714b0b391310892c3"
+content-hash = "089e21d489d9707aa0bfba2082be215692269770213fdc0a7e815d4f1806ac5b"

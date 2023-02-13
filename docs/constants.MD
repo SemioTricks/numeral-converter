@@ -7,3 +7,4 @@
 "gender": ("feminine", "masculine", "neuter"),
 "number": ("plural", "singular")
             }
+`REGEX_PATTERN_WORDS` = re.compile("[a-zA-Zа-яА-ЯїЇґҐєЄёЁіІ'’]+")
