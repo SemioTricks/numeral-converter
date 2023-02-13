@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "numeral-converter"
-version = "0.0.1"
+version = "0.0.2"
 description = ""
 authors = [ "Tetiana Lytvynenko <lytvynenkotv@gmail.com>", "Denis Shchutskyi <denisshchutskyi@gmail.com>"]
 readme = "README.md"
@@ -10,7 +10,7 @@ packages = [{include = "numeral_converter"}]
 python = "^3.9"
 pandas = "^1.5.3"
 semiotic-tricks-data-loader = "^0.0.1"
-fuzzy-multi-dict = "^0.0.3"
+fuzzy-multi-dict = "^0.0.4"
 
 
 [build-system]
